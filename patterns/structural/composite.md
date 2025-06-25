@@ -34,213 +34,196 @@ Composite Pattern bao gồm các thành phần sau:
   - Tương tác với các đối tượng trong composition thông qua interface `Component`.
   - Client không cần phân biệt giữa `Leaf` và `Composite`, giúp đơn giản hóa code.
 
-## 3. Ví dụ trong ROS2
+## 3. Ví dụ trong C++ (ROS2)
 
-Hãy xem xét một ví dụ về việc mô hình hóa một robot di động tự hành (AMR - Autonomous Mobile Robot) sử dụng Composite Pattern.
+Hãy xem xét một ví dụ về việc mô hình hóa một robot di động tự hành (AMR - Autonomous Mobile Robot) sử dụng Composite Pattern trong C++.
 
-### 3.1. Component Interface
+### 3.1. Component Interface (`robot_component.hpp`)
 
-Đầu tiên, chúng ta định nghĩa một `Component` chung cho tất cả các bộ phận của robot.
+```cpp
+#pragma once
 
-```python
-# robot_component.py
-from abc import ABC, abstractmethod
+class RobotComponent {
+protected:
+    std::string name_;
+    RobotComponent* parent_ = nullptr;
 
-class RobotComponent(ABC):
-    """Component Interface"""
-    def __init__(self, name):
-        self._name = name
-        self._parent = None
+public:
+    RobotComponent(const std::string& name) : name_(name) {}
+    virtual ~RobotComponent() = default;
 
-    def set_parent(self, parent):
-        self._parent = parent
+    void set_parent(RobotComponent* parent) {
+        parent_ = parent;
+    }
 
-    def get_parent(self):
-        return self._parent
+    RobotComponent* get_parent() const {
+        return parent_;
+    }
 
-    def add(self, component: 'RobotComponent'):
-        pass
+    virtual void add(std::unique_ptr<RobotComponent> component) {}
+    virtual void remove(RobotComponent* component) {}
+    virtual bool is_composite() const { return false; }
 
-    def remove(self, component: 'RobotComponent'):
-        pass
-
-    def is_composite(self):
-        return False
-
-    @abstractmethod
-    def initialize(self):
-        pass
-
-    @abstractmethod
-    def shutdown(self):
-        pass
-
-    @abstractmethod
-    def get_status(self):
-        pass
+    virtual void initialize() = 0;
+    virtual void shutdown() = 0;
+    virtual std::string get_status() = 0;
+    
+    std::string get_name() const { return name_; }
+};
 ```
 
-### 3.2. Leaf Components
+### 3.2. Leaf Components (`leaf_components.hpp`)
 
-Các `Leaf` là các bộ phận cụ thể của robot.
+```cpp
+#pragma once
 
-```python
-# leaf_components.py
-from robot_component import RobotComponent
+// Leaf: LidarSensor
+class LidarSensor : public RobotComponent {
+public:
+    using RobotComponent::RobotComponent; // Inherit constructor
 
-class LidarSensor(RobotComponent):
-    """Leaf"""
-    def initialize(self):
-        print(f"Initializing LiDAR sensor: {self._name}")
-        # Code để khởi tạo kết nối với LiDAR, đăng ký ROS2 publisher/subscriber
+    void initialize() override {
+        std::cout << "Initializing LiDAR sensor: " << name_ << std::endl;
+    }
 
-    def shutdown(self):
-        print(f"Shutting down LiDAR sensor: {self._name}")
+    void shutdown() override {
+        std::cout << "Shutting down LiDAR sensor: " << name_ << std::endl;
+    }
 
-    def get_status(self):
-        return f"LiDAR {self._name}: OK"
+    std::string get_status() override {
+        return "LiDAR " + name_ + ": OK";
+    }
+};
 
-class CameraSensor(RobotComponent):
-    """Leaf"""
-    def initialize(self):
-        print(f"Initializing Camera sensor: {self._name}")
+// Leaf: CameraSensor
+class CameraSensor : public RobotComponent {
+public:
+    using RobotComponent::RobotComponent;
 
-    def shutdown(self):
-        print(f"Shutting down Camera sensor: {self._name}")
+    void initialize() override {
+        std::cout << "Initializing Camera sensor: " << name_ << std::endl;
+    }
 
-    def get_status(self):
-        return f"Camera {self._name}: OK"
+    void shutdown() override {
+        std::cout << "Shutting down Camera sensor: " << name_ << std::endl;
+    }
 
-class MotorController(RobotComponent):
-    """Leaf"""
-    def initialize(self):
-        print(f"Initializing Motor Controller: {self._name}")
+    std::string get_status() override {
+        return "Camera " + name_ + ": OK";
+    }
+};
 
-    def shutdown(self):
-        print(f"Shutting down Motor Controller: {self._name}")
+// Leaf: MotorController
+class MotorController : public RobotComponent {
+public:
+    using RobotComponent::RobotComponent;
 
-    def get_status(self):
-        return f"Motor Controller {self._name}: Running"
+    void initialize() override {
+        std::cout << "Initializing Motor Controller: " << name_ << std::endl;
+    }
+
+    void shutdown() override {
+        std::cout << "Shutting down Motor Controller: " << name_ << std::endl;
+    }
+
+    std::string get_status() override {
+        return "Motor Controller " + name_ + ": Running";
+    }
+};
 ```
 
-### 3.3. Composite Components
+### 3.3. Composite Component (`composite_component.hpp`)
 
-Các `Composite` là các hệ thống con, chứa các `Leaf` hoặc các `Composite` khác.
+```cpp
+#pragma once
 
-```python
-# composite_components.py
-from typing import List
-from robot_component import RobotComponent
+class Composite : public RobotComponent {
+protected:
+    std::vector<std::unique_ptr<RobotComponent>> children_;
 
-class Composite(RobotComponent):
-    """Composite"""
-    def __init__(self, name):
-        super().__init__(name)
-        self._children: List[RobotComponent] = []
+public:
+    using RobotComponent::RobotComponent;
 
-    def add(self, component: RobotComponent):
-        self._children.append(component)
-        component.set_parent(self)
+    void add(std::unique_ptr<RobotComponent> component) override {
+        component->set_parent(this);
+        children_.push_back(std::move(component));
+    }
 
-    def remove(self, component: RobotComponent):
-        self._children.remove(component)
-        component.set_parent(None)
+    void remove(RobotComponent* component) override {
+        children_.erase(
+            std::remove_if(children_.begin(), children_.end(), 
+                [&](const std::unique_ptr<RobotComponent>& p) {
+                    return p.get() == component;
+                }),
+            children_.end()
+        );
+    }
 
-    def is_composite(self):
-        return True
+    bool is_composite() const override {
+        return true;
+    }
 
-    def initialize(self):
-        print(f"Initializing composite component: {self._name}")
-        for child in self._children:
-            child.initialize()
+    void initialize() override {
+        std::cout << "Initializing composite component: " << name_ << std::endl;
+        for (const auto& child : children_) {
+            child->initialize();
+        }
+    }
 
-    def shutdown(self):
-        print(f"Shutting down composite component: {self._name}")
-        for child in self._children:
-            child.shutdown()
+    void shutdown() override {
+        std::cout << "Shutting down composite component: " << name_ << std::endl;
+        for (const auto& child : children_) {
+            child->shutdown();
+        }
+    }
 
-    def get_status(self):
-        results = []
-        for child in self._children:
-            results.append(child.get_status())
-        return f"Composite {self._name}: [{', '.join(results)}]"
-
-# Cụ thể hóa các Composite
-class SensorSystem(Composite):
-    """Composite for sensors"""
-    pass
-
-class DriveSystem(Composite):
-    """Composite for drive system"""
-    pass
-
-class AutonomousMobileRobot(Composite):
-    """The top-level composite"""
-    pass
+    std::string get_status() override {
+        std::string result = "Composite " + name_ + ": [";
+        for (size_t i = 0; i < children_.size(); ++i) {
+            result += children_[i]->get_status();
+            if (i < children_.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += "]";
+        return result;
+    }
+};
 ```
 
-### 3.4. Client Code
+### 3.4. Client Code (`main.cpp`)
 
-Client sẽ xây dựng cây cấu trúc robot và tương tác với nó.
+```cpp
+int main() {
+    // 1. Build the robot's component tree
+    auto robot = std::make_unique<Composite>("MyAMR");
 
-```python
-# main.py
-from leaf_components import LidarSensor, CameraSensor, MotorController
-from composite_components import SensorSystem, DriveSystem, AutonomousMobileRobot
+    // Sensor System
+    auto sensor_system = std::make_unique<Composite>("SensorSystem");
+    sensor_system->add(std::make_unique<LidarSensor>("Lidar_Front"));
+    sensor_system->add(std::make_unique<CameraSensor>("Camera_Stereo"));
 
-if __name__ == "__main__":
-    # 1. Xây dựng cây cấu trúc robot
-    robot = AutonomousMobileRobot("MyAMR")
+    // Drive System
+    auto drive_system = std::make_unique<Composite>("DriveSystem");
+    drive_system->add(std::make_unique<MotorController>("Motor_Left"));
+    drive_system->add(std::make_unique<MotorController>("Motor_Right"));
 
-    # Hệ thống cảm biến
-    sensor_system = SensorSystem("SensorSystem")
-    sensor_system.add(LidarSensor("Lidar_Front"))
-    sensor_system.add(CameraSensor("Camera_Stereo"))
+    // Add subsystems to the robot
+    robot->add(std::move(sensor_system));
+    robot->add(std::move(drive_system));
 
-    # Hệ thống truyền động
-    drive_system = DriveSystem("DriveSystem")
-    drive_system.add(MotorController("Motor_Left"))
-    drive_system.add(MotorController("Motor_Right"))
+    // 2. Interact with the robot
+    std::cout << "--- Initializing Robot ---" << std::endl;
+    robot->initialize();
 
-    # Thêm các hệ thống con vào robot
-    robot.add(sensor_system)
-    robot.add(drive_system)
+    std::cout << "\n--- Getting Robot Status ---" << std::endl;
+    std::cout << robot->get_status() << std::endl;
 
-    # 2. Tương tác với robot
-    print("--- Initializing Robot ---")
-    robot.initialize()
+    std::cout << "\n--- Shutting Down Robot ---" << std::endl;
+    robot->shutdown();
 
-    print("
---- Getting Robot Status ---")
-    print(robot.get_status())
-
-    print("
---- Shutting Down Robot ---")
-    robot.shutdown()
-```
-
-### Kết quả chạy:
-```
---- Initializing Robot ---
-Initializing composite component: MyAMR
-Initializing composite component: SensorSystem
-Initializing LiDAR sensor: Lidar_Front
-Initializing Camera sensor: Camera_Stereo
-Initializing composite component: DriveSystem
-Initializing Motor Controller: Motor_Left
-Initializing Motor Controller: Motor_Right
-
---- Getting Robot Status ---
-Composite MyAMR: [Composite SensorSystem: [LiDAR Lidar_Front: OK, Camera Camera_Stereo: OK], Composite DriveSystem: [Motor Controller Motor_Left: Running, Motor Controller Motor_Right: Running]]
-
---- Shutting Down Robot ---
-Shutting down composite component: MyAMR
-Shutting down composite component: SensorSystem
-Shutting down LiDAR sensor: Lidar_Front
-Shutting down Camera sensor: Camera_Stereo
-Shutting down composite component: DriveSystem
-Shutting down Motor Controller: Motor_Left
-Shutting down Motor Controller: Motor_Right
+    return 0;
+}
 ```
 
 ## 4. Best Practices

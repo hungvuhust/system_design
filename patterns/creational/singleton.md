@@ -1,3 +1,88 @@
+# Singleton Pattern in ROS2
+
+## What is the Singleton Pattern?
+
+The Singleton pattern ensures that a class has only one instance and provides a global point of access to it. This is useful when exactly one object is needed to coordinate actions across the system.
+
+## Use Case in Robotics
+
+In a ROS2 system, a Singleton can be used to manage a shared resource, such as a logger, a configuration manager, or a connection to a specific piece of hardware that should only be instantiated once. For example, a `RobotStateManager` class could be a Singleton that provides a single, consistent source of the robot's state (e.g., position, velocity, battery level) to all other nodes in the system.
+
+This avoids conflicts and ensures that all parts of the system are working with the same data.
+
+## C++ Example
+
+Here is a C++ example of a Singleton pattern for a system-wide logger.
+
+```cpp
+class Logger {
+private:
+    // Private constructor to prevent instantiation
+    Logger() {}
+
+    // Static instance of the class
+    static Logger* instance;
+
+public:
+    // Delete copy constructor and assignment operator
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    // Static method to get the single instance
+    static Logger* getInstance() {
+        if (instance == nullptr) {
+            instance = new Logger();
+        }
+        return instance;
+    }
+
+    void log(const std::string& message) {
+        // Log the message to a file or console
+    }
+};
+
+// Initialize static member
+Logger* Logger::instance = nullptr;
+```
+
+A more modern C++ approach (Meyers' Singleton) is thread-safe and simpler:
+
+```cpp
+class Logger {
+private:
+    Logger() {}
+
+public:
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    static Logger& getInstance() {
+        static Logger instance;
+        return instance;
+    }
+
+    void log(const std::string& message) {
+        // Logging implementation
+    }
+};
+```
+
+## Best Practices
+
+*   **Thread Safety:** In a multi-threaded environment like ROS2, ensure that the Singleton implementation is thread-safe. The Meyers' Singleton is a good choice for this.
+*   **Global State:** Be cautious with Singletons as they introduce global state into the system, which can make testing and debugging more difficult.
+*   **Dependency Injection:** Consider using dependency injection as an alternative to Singletons to make your components more modular and testable.
+
+## Extensions and Variations
+
+*   **Registry of Singletons:** Instead of having multiple Singleton classes, you can have a central registry that manages all singleton objects.
+*   **Templated Singleton:** You can create a template class for Singletons to avoid rewriting the same boilerplate code.
+
+## Testing
+
+*   **Difficult to Test:** Singletons are notoriously difficult to test because they introduce global state. You cannot easily mock a Singleton.
+*   **Reset Method:** One strategy is to add a static `reset()` method to the Singleton that allows you to destroy the instance for testing purposes. This should only be used in a test environment.
+
 ## SINGLETON PATTERN TRONG ROS2
 
 #### 1. Giới thiệu đơn giản
@@ -424,4 +509,4 @@ Singleton Pattern là một mẫu thiết kế quan trọng trong phát triển 
    - Quản lý tài nguyên shared
    - Xử lý lỗi tập trung
 
-Trong ví dụ về hardware interface, chúng ta đã thấy Singleton Pattern giúp xây dựng một hệ thống quản lý hardware an toàn và hiệu quả. Pattern này là lựa chọn tốt cho các hệ thống robotics cần quản lý tài nguyên tập trung và đảm bảo tính nhất quán của dữ liệu. 
+Trong ví dụ về hardware interface, chúng ta đã thấy Singleton Pattern giúp xây dựng một hệ thống quản lý hardware an toàn và hiệu quả. Pattern này là lựa chọn tốt cho các hệ thống robotics cần quản lý tài nguyên tập trung và đảm bảo tính nhất quán của dữ liệu.

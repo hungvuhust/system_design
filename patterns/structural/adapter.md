@@ -408,4 +408,69 @@ Adapter Pattern là một mẫu thiết kế cấu trúc quan trọng trong phá
    - Giảm thiểu rủi ro khi tích hợp components mới
    - Tăng khả năng tái sử dụng code
 
-Trong ví dụ về việc tích hợp cảm biến siêu âm mới vào hệ thống robot, chúng ta đã thấy Adapter Pattern giúp giải quyết vấn đề không tương thích một cách thanh lịch và hiệu quả. Pattern này là công cụ thiết yếu cho các nhà phát triển ROS2 trong việc xây dựng hệ thống robotics linh hoạt và dễ mở rộng. 
+Trong ví dụ về việc tích hợp cảm biến siêu âm mới vào hệ thống robot, chúng ta đã thấy Adapter Pattern giúp giải quyết vấn đề không tương thích một cách thanh lịch và hiệu quả. Pattern này là công cụ thiết yếu cho các nhà phát triển ROS2 trong việc xây dựng hệ thống robotics linh hoạt và dễ mở rộng.
+
+# Adapter Pattern in ROS2
+
+## What is the Adapter Pattern?
+
+The Adapter pattern allows objects with incompatible interfaces to collaborate. It acts as a wrapper between two objects, catching calls for one object and transforming them into a format and interface recognizable by the second.
+
+## Use Case in Robotics
+
+In robotics, you often integrate third-party hardware or software libraries that have different interfaces from your existing system. For example, you might have a legacy sensor that provides data in an old format, but your new ROS2 system expects data in a standard `sensor_msgs` format. An adapter can be used to convert the legacy data format into the one expected by the rest of the ROS2 nodes.
+
+Another example is adapting a non-standard motor controller API to a standard ROS2 `ros2_control` hardware interface.
+
+## C++ Example
+
+Here is a C++ example of an Adapter pattern to make a legacy temperature sensor compatible with a modern monitoring system.
+
+```cpp
+// Target interface (what the client expects)
+class ModernSensor {
+public:
+    virtual ~ModernSensor() {}
+    virtual double getTemperatureCelsius() const = 0;
+};
+
+// Adaptee (the legacy component with an incompatible interface)
+class LegacyTemperatureSensor {
+public:
+    double getTempFahrenheit() const {
+        // Simulates reading from a legacy sensor
+        return 98.6;
+    }
+};
+
+// Adapter
+class SensorAdapter : public ModernSensor {
+private:
+    LegacyTemperatureSensor* legacySensor;
+
+public:
+    SensorAdapter(LegacyTemperatureSensor* sensor) : legacySensor(sensor) {}
+
+    double getTemperatureCelsius() const override {
+        double fahrenheit = legacySensor->getTempFahrenheit();
+        // Convert Fahrenheit to Celsius
+        return (fahrenheit - 32.0) * 5.0 / 9.0;
+    }
+};
+```
+
+## Best Practices
+
+*   **One-Way Adaptation:** An adapter typically provides a one-way conversion. If you need two-way communication, you might need a two-way adapter.
+*   **Object vs. Class Adapter:** The example above is an Object Adapter (using composition). A Class Adapter (using multiple inheritance) is also possible but less common in C++.
+*   **Keep it Simple:** The adapter should only be responsible for the interface conversion and not add new business logic.
+
+## Extensions and Variations
+
+*   **Pluggable Adapters:** You can create a system where adapters can be discovered and loaded at runtime, for example, using a plugin mechanism like `pluginlib` in ROS.
+*   **Default Adapter:** Provide a default adapter that does nothing or returns default values if no specific adapter is found.
+
+## Testing
+
+*   **Unit Testing:** Test the adapter to ensure that it correctly converts the interface and data.
+*   **Integration Testing:** Test the adapter with the client and the adaptee to ensure they work together seamlessly.

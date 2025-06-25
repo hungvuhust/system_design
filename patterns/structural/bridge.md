@@ -1,3 +1,104 @@
+# Bridge Pattern in ROS2
+
+## What is the Bridge Pattern?
+
+The Bridge pattern is a structural design pattern that lets you split a large class or a set of closely related classes into two separate hierarchies—abstraction and implementation—which can be developed independently of each other.
+
+## Use Case in Robotics
+
+In robotics, the Bridge pattern is useful when you need to decouple an abstraction from its implementation. For example, you might have a high-level motion planning interface (the abstraction) that can work with different underlying robot platforms (the implementations). The motion planning algorithms don't need to know the specifics of how a robot moves; they just command the robot through a generic interface. The implementation part translates these generic commands into platform-specific instructions (e.g., for a differential drive robot, a holonomic robot, or a legged robot).
+
+This allows you to add new robot platforms or new motion planning algorithms without modifying the existing code on the other side of the bridge.
+
+## C++ Example
+
+Here is a C++ example of the Bridge pattern for controlling different types of robot platforms.
+
+```cpp
+// Implementor interface
+class RobotPlatformImpl {
+public:
+    virtual ~RobotPlatformImpl() {}
+    virtual void move(double x, double y) = 0;
+    virtual void turn(double angle) = 0;
+    virtual void stop() = 0;
+};
+
+// Concrete Implementor A
+class DifferentialDrivePlatform : public RobotPlatformImpl {
+public:
+    void move(double x, double y) override {
+        // Send commands to a differential drive robot
+    }
+
+    void turn(double angle) override {
+        // Send commands to a differential drive robot
+    }
+
+    void stop() override {
+        // Send commands to a differential drive robot
+    }
+};
+
+// Concrete Implementor B
+class LeggedPlatform : public RobotPlatformImpl {
+public:
+    void move(double x, double y) override {
+        // Send commands to a legged robot
+    }
+
+    void turn(double angle) override {
+        // Send commands to a legged robot
+    }
+
+    void stop() override {
+        // Send commands to a legged robot
+    }
+};
+
+// Abstraction
+class RobotController {
+protected:
+    RobotPlatformImpl* platform;
+
+public:
+    RobotController(RobotPlatformImpl* impl) : platform(impl) {}
+    virtual ~RobotController() {}
+
+    virtual void executeMotion() = 0;
+};
+
+// Refined Abstraction
+class AutonomousNavigator : public RobotController {
+public:
+    AutonomousNavigator(RobotPlatformImpl* impl) : RobotController(impl) {}
+
+    void executeMotion() override {
+        // High-level navigation logic
+        platform->move(1.0, 0.0);
+        platform->turn(90.0);
+        platform->move(0.0, 1.0);
+        platform->stop();
+    }
+};
+```
+
+## Best Practices
+
+*   **Decoupling:** Use the Bridge pattern when you want to decouple an abstraction from its implementation so that they can vary independently.
+*   **Single Responsibility Principle:** The abstraction should focus on high-level logic, and the implementation should focus on platform-specific details.
+*   **Composition over Inheritance:** The Bridge pattern uses composition to link the abstraction and implementation, which is more flexible than using inheritance.
+
+## Extensions and Variations
+
+*   **Multiple Bridges:** You can have multiple bridges in your system for different abstractions (e.g., one for motion, one for manipulation).
+*   **Runtime Implementation Selection:** The implementation can be chosen or switched at runtime.
+
+## Testing
+
+*   **Unit Testing:** Test the abstraction and implementation hierarchies separately.
+*   **Mocking:** Use mock objects for the implementations to test the abstractions in isolation.
+
 ## BRIDGE PATTERN TRONG ROS2
 
 #### 1. Giới thiệu đơn giản
@@ -596,4 +697,4 @@ Bridge Pattern là một mẫu thiết kế cấu trúc mạnh mẽ trong phát 
    - Giảm thời gian phát triển cho các robot mới
    - Tăng độ tin cậy của hệ thống
 
-Trong ví dụ về hệ thống điều khiển robot, chúng ta đã thấy Bridge Pattern giúp xây dựng một kiến trúc linh hoạt, cho phép kết hợp bất kỳ loại robot nào với bất kỳ loại controller nào. Pattern này là lựa chọn xuất sắc cho các dự án robotics cần sự linh hoạt cao và khả năng mở rộng dễ dàng. 
+Trong ví dụ về hệ thống điều khiển robot, chúng ta đã thấy Bridge Pattern giúp xây dựng một kiến trúc linh hoạt, cho phép kết hợp bất kỳ loại robot nào với bất kỳ loại controller nào. Pattern này là lựa chọn xuất sắc cho các dự án robotics cần sự linh hoạt cao và khả năng mở rộng dễ dàng.

@@ -1,3 +1,98 @@
+# Observer Pattern in ROS2
+
+## What is the Observer Pattern?
+
+The Observer pattern is a behavioral design pattern that defines a one-to-many dependency between objects. When one object (the subject) changes its state, all its dependents (the observers) are notified and updated automatically.
+
+## Use Case in Robotics
+
+The Observer pattern is fundamental to the architecture of ROS2 itself. The publish-subscribe mechanism is a direct implementation of the Observer pattern. A ROS2 node (the subject) publishes messages on a topic, and any number of other nodes (the observers) can subscribe to that topic to receive the messages.
+
+For example:
+*   A camera driver node (subject) publishes `sensor_msgs/Image` messages.
+*   An image processing node (observer) subscribes to the image topic to perform object detection.
+*   A user interface node (observer) subscribes to the same topic to display the video feed.
+
+When the camera publishes a new image, both the processing node and the UI node are notified and can react accordingly.
+
+## C++ Example
+
+Here is a classic C++ implementation of the Observer pattern. In a real ROS2 application, you would use the built-in `rclcpp::Publisher` and `rclcpp::Subscription` classes, which handle the observer logic for you.
+
+```cpp
+// Observer interface
+class IObserver {
+public:
+    virtual ~IObserver() {};
+    virtual void update(const std::string& message) = 0;
+};
+
+// Subject interface
+class ISubject {
+public:
+    virtual ~ISubject() {};
+    virtual void attach(IObserver* observer) = 0;
+    virtual void detach(IObserver* observer) = 0;
+    virtual void notify() = 0;
+};
+
+// Concrete Subject
+class RobotState : public ISubject {
+private:
+    std::list<IObserver*> observers;
+    std::string state;
+
+public:
+    void attach(IObserver* observer) override {
+        observers.push_back(observer);
+    }
+
+    void detach(IObserver* observer) override {
+        observers.remove(observer);
+    }
+
+    void notify() override {
+        for (IObserver* observer : observers) {
+            observer->update(state);
+        }
+    }
+
+    void setState(const std::string& newState) {
+        state = newState;
+        notify();
+    }
+};
+
+// Concrete Observer
+class Dashboard : public IObserver {
+private:
+    std::string robotName;
+
+public:
+    Dashboard(const std::string& name) : robotName(name) {}
+
+    void update(const std::string& message) override {
+        // Display the new state on the dashboard
+    }
+};
+```
+
+## Best Practices
+
+*   **Use ROS2 Pub/Sub:** For inter-node communication in ROS2, always prefer the built-in publish-subscribe mechanism over implementing your own Observer pattern.
+*   **Intra-Node Observer:** The classic Observer pattern can still be useful for intra-node communication, i.e., for communication between different objects within the same ROS2 node.
+*   **Decoupling:** The pattern decouples the subject from its observers. The subject doesn't need to know about the concrete classes of the observers.
+
+## Extensions and Variations
+
+*   **Pull vs. Push:** The example shows a "push" model, where the subject sends the changed data to the observers. In a "pull" model, the subject only sends a notification, and the observers have to query the subject for the data.
+*   **Event Libraries:** Libraries like `boost::signals2` provide a powerful and flexible implementation of the Observer pattern.
+
+## Testing
+
+*   **Mocking:** Use mock observers to test the subject and ensure it notifies them correctly.
+*   **State Verification:** Test the observers to ensure they update their state correctly when they receive a notification.
+
 ## OBSERVER PATTERN TRONG ROS2
 
 #### 1. Giới thiệu đơn giản
@@ -540,4 +635,4 @@ Observer Pattern là một mẫu thiết kế quan trọng trong ROS2 và roboti
    - Tối ưu hóa tài nguyên hệ thống
    - Xử lý đồng thời nhiều observers một cách hiệu quả
 
-Trong ví dụ về hệ thống giám sát nhiệt độ, chúng ta đã thấy Observer Pattern giúp xây dựng một hệ thống mạnh mẽ, có khả năng mở rộng và dễ bảo trì. Pattern này là lựa chọn tốt cho các hệ thống robotics cần theo dõi và phản ứng với các thay đổi trạng thái một cách real-time. 
+Trong ví dụ về hệ thống giám sát nhiệt độ, chúng ta đã thấy Observer Pattern giúp xây dựng một hệ thống mạnh mẽ, có khả năng mở rộng và dễ bảo trì. Pattern này là lựa chọn tốt cho các hệ thống robotics cần theo dõi và phản ứng với các thay đổi trạng thái một cách real-time.

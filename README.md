@@ -43,6 +43,8 @@ Các pattern liên quan đến object composition
 - **[Composite](./patterns/structural/composite.md)**: Cấu trúc các đối tượng theo dạng cây và xử lý chúng một cách thống nhất.
 - **[Decorator](./patterns/structural/decorator.md)**: Thêm chức năng cho đối tượng một cách linh hoạt.
 - **[Facade](./patterns/structural/facade.md)**: Cung cấp một giao diện đơn giản cho một hệ thống phức tạp.
+- **[Flyweight](./patterns/structural/flyweight.md)**: Giảm chi phí bộ nhớ bằng cách chia sẻ trạng thái chung.
+- **[Proxy](./patterns/structural/proxy.md)**: Cung cấp một đối tượng thay thế để kiểm soát quyền truy cập vào một đối tượng khác.
 
 ### 🎯 [Behavioral Patterns](./patterns/behavioral/)
 Các pattern liên quan đến communication giữa objects

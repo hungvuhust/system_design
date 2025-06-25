@@ -1,6 +1,6 @@
-## FACTORY PATTERN TRONG ROS2
+# FACTORY PATTERN TRONG ROS2
 
-#### 1. Giới thiệu đơn giản
+## 1. Giới thiệu đơn giản
 Factory Pattern là một mẫu thiết kế khởi tạo cho phép tạo các đối tượng mà không cần chỉ định chính xác lớp của chúng. Trong ROS2, pattern này đặc biệt hữu ích khi:
 
 - Tạo các node plugins khác nhau
@@ -8,7 +8,7 @@ Factory Pattern là một mẫu thiết kế khởi tạo cho phép tạo các �
 - Tạo các message handlers
 - Quản lý các loại controllers khác nhau
 
-#### 2. Định nghĩa chi tiết
+## 2. Định nghĩa chi tiết
 Factory Pattern định nghĩa một interface để tạo đối tượng nhưng để các lớp con quyết định lớp nào sẽ được khởi tạo. Pattern này cho phép một lớp hoãn việc khởi tạo sang lớp con.
 
 #### Các thành phần chính:
@@ -28,7 +28,7 @@ Factory Pattern định nghĩa một interface để tạo đối tượng nhưn
    - Implements factory interface
    - Tạo các concrete products
 
-#### 3. Ví dụ thực tế trong ROS2
+## 3. Ví dụ thực tế trong ROS2
 ```cpp
 // 1. Product Interface
 class SensorDriver {
@@ -536,27 +536,91 @@ TEST(SensorSystemTest, FullSystemTest) {
 }
 ```
 
-#### 10. Kết luận
-Factory Pattern là một mẫu thiết kế quan trọng trong ROS2, đặc biệt hữu ích cho việc quản lý và tạo các đối tượng phức tạp như sensor drivers, plugins, và message handlers. Pattern này mang lại nhiều lợi ích:
+# Factory Method Pattern in ROS2
 
-1. **Flexibility và Extensibility**:
-   - Dễ dàng thêm sensor types mới
-   - Không cần sửa đổi code hiện có
-   - Runtime configuration và loading
+## What is the Factory Method Pattern?
 
-2. **Code Organization**:
-   - Separation of concerns rõ ràng
-   - Interface standards
-   - Dễ maintain và test
+The Factory Method pattern is a creational design pattern that provides an interface for creating objects in a superclass, but allows subclasses to alter the type of objects that will be created. It defines an interface for creating an object, but lets subclasses decide which class to instantiate.
 
-3. **Error Handling**:
-   - Centralized error management
-   - Graceful error recovery
-   - Consistent logging
+## Use Case in Robotics
 
-4. **Resource Management**:
-   - Clean initialization và cleanup
-   - Safe resource handling
-   - Memory management
+In robotics, the Factory Method pattern is useful when you have a class that needs to create objects, but you want to allow subclasses to specify the exact type of object to create. For example, you might have a generic `Robot` class that needs to create a `PathPlanner` object. Different types of robots might require different path planning algorithms (e.g., A*, RRT, DWA). You can use the Factory Method to let subclasses of `Robot` (e.g., `DifferentialDriveRobot`, `LeggedRobot`) create the appropriate planner instance.
 
-Trong ví dụ về sensor system, chúng ta đã thấy Factory Pattern giúp xây dựng một hệ thống sensor modular, extensible và maintainable. Pattern này là lựa chọn tốt cho các hệ thống ROS2 cần quản lý nhiều loại đối tượng khác nhau một cách linh hoạt và an toàn.
+This allows you to write generic robot logic that works with any type of planner, as long as it conforms to the `PathPlanner` interface.
+
+## C++ Example
+
+Here is a C++ example of the Factory Method pattern for creating path planners for different robot types.
+
+```cpp
+// Product interface
+class PathPlanner {
+public:
+    virtual ~PathPlanner() {}
+    virtual void planPath(double startX, double startY, double endX, double endY) = 0;
+};
+
+// Concrete Product A
+class AStarPlanner : public PathPlanner {
+public:
+    void planPath(double startX, double startY, double endX, double endY) override {
+        // A* planning logic
+    }
+};
+
+// Concrete Product B
+class RRTPlanner : public PathPlanner {
+public:
+    void planPath(double startX, double startY, double endX, double endY) override {
+        // RRT planning logic
+    }
+};
+
+// Creator (defines the factory method)
+class Robot {
+protected:
+    PathPlanner* planner;
+
+public:
+    virtual ~Robot() { delete planner; }
+
+    // The factory method
+    virtual PathPlanner* createPlanner() = 0;
+
+    void planNavigation() {
+        planner = createPlanner();
+        planner->planPath(0, 0, 10, 10);
+    }
+};
+
+// Concrete Creator A
+class GroundRobot : public Robot {
+public:
+    PathPlanner* createPlanner() override {
+        return new AStarPlanner();
+    }
+};
+
+// Concrete Creator B
+class AerialRobot : public Robot {
+public:
+    PathPlanner* createPlanner() override {
+        return new RRTPlanner();
+    }
+};
+```
+
+## Best Practices
+
+*   **Depend on Abstractions:** The creator class should depend on the abstract product interface, not the concrete product classes.
+*   **Default Implementation:** The creator can provide a default implementation of the factory method that creates a default concrete product.
+*   **Parameterization:** The factory method can be parameterized to create different variations of a product.
+
+## Extensions and Variations
+
+*   **Static Factory:** A static method in the creator class can act as a factory. This is simpler but not as flexible as the classic Factory Method, as it cannot be overridden by subclasses.
+
+## Testing
+
+*   **Unit Testing:** Test each concrete creator to ensure that it creates the correct type of product.
+*   **Integration Testing:** Test the interaction between the creator and the products it creates.

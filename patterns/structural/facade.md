@@ -25,97 +25,125 @@ Trong ROS2 và robotics, hệ thống thường bao gồm nhiều subsystem ph�
   - Sử dụng Facade để tương tác với subsystem một cách đơn giản.
   - Client không cần biết về sự phức tạp bên trong của subsystem.
 
-## 3. Ví dụ trong ROS2
+## 3. Ví dụ trong C++ (ROS2)
 
-Hãy tạo một Facade cho một hệ thống navigation đơn giản. Hệ thống này bao gồm 3 subsystem:
+Hãy tạo một Facade cho một hệ thống navigation đơn giản trong C++. Hệ thống này bao gồm 3 subsystem:
 1.  `LocalizationSystem`: Cung cấp vị trí hiện tại của robot.
 2.  `PlanningSystem`: Tìm một đường đi từ điểm A đến điểm B.
 3.  `ControlSystem`: Điều khiển robot di chuyển theo đường đi đã hoạch định.
 
-### 3.1. Subsystem Classes
+### 3.1. Subsystem Classes (`subsystem.hpp`)
 
 Đây là các class giả lập cho các subsystem phức tạp.
 
-```python
-# subsystem.py
-from typing import List, Tuple
+```cpp
+#pragma once
+#include <iostream>
+#include <vector>
+#include <utility>
 
-class LocalizationSystem:
-    """Một phần của subsystem phức tạp"""
-    def get_current_pose(self) -> Tuple[int, int]:
-        print("[Localization] Getting current robot pose.")
-        return (0, 0)
+using Pose = std::pair<int, int>;
+using Path = std::vector<Pose>;
 
-class PlanningSystem:
-    """Một phần của subsystem phức tạp"""
-    def plan_path(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
-        print(f"[Planning] Planning path from {start} to {goal}.")
-        return [start, (start[0], goal[1]), goal]
+// Một phần của subsystem phức tạp
+class LocalizationSystem {
+public:
+    Pose get_current_pose() {
+        std::cout << "[Localization] Getting current robot pose." << std::endl;
+        return {0, 0};
+    }
+};
 
-class ControlSystem:
-    """Một phần của subsystem phức tạp"""
-    def execute_path(self, path: List[Tuple[int, int]]):
-        print(f"[Control] Executing path: {path}")
-        for point in path:
-            print(f"[Control] Moving to {point}...")
-        print("[Control] Goal reached.")
+// Một phần của subsystem phức tạp
+class PlanningSystem {
+public:
+    Path plan_path(const Pose& start, const Pose& goal) {
+        std::cout << "[Planning] Planning path from (" << start.first << "," << start.second 
+                  << ") to (" << goal.first << "," << goal.second << ")." << std::endl;
+        return {start, {start.first, goal.second}, goal};
+    }
+};
+
+// Một phần của subsystem phức tạp
+class ControlSystem {
+public:
+    void execute_path(const Path& path) {
+        std::cout << "[Control] Executing path: ";
+        for(const auto& p : path) std::cout << "(" << p.first << "," << p.second << ") ";
+        std::cout << std::endl;
+        
+        for (const auto& point : path) {
+            std::cout << "[Control] Moving to (" << point.first << "," << point.second << ")..." << std::endl;
+        }
+        std::cout << "[Control] Goal reached." << std::endl;
+    }
+};
 ```
 
-### 3.2. Navigation Facade
+### 3.2. Navigation Facade (`navigation_facade.hpp`)
 
 Facade này cung cấp một phương thức `navigate_to_goal` duy nhất.
 
-```python
-# navigation_facade.py
-from subsystem import LocalizationSystem, PlanningSystem, ControlSystem
-from typing import Tuple
+```cpp
+#pragma once
+#include "subsystem.hpp"
+#include <memory>
 
-class NavigationFacade:
-    """Facade"""
-    def __init__(self):
-        self._localization = LocalizationSystem()
-        self._planning = PlanningSystem()
-        self._control = ControlSystem()
+class NavigationFacade {
+private:
+    std::unique_ptr<LocalizationSystem> localization_;
+    std::unique_ptr<PlanningSystem> planning_;
+    std::unique_ptr<ControlSystem> control_;
 
-    def navigate_to_goal(self, goal: Tuple[int, int]):
-        """Interface đơn giản hóa"""
-        print(f"--- Starting navigation to {goal} ---")
-        # 1. Lấy vị trí hiện tại
-        current_pose = self._localization.get_current_pose()
+public:
+    NavigationFacade() 
+        : localization_(std::make_unique<LocalizationSystem>()),
+          planning_(std::make_unique<PlanningSystem>()),
+          control_(std::make_unique<ControlSystem>()) {}
 
-        # 2. Hoạch định đường đi
-        path = self._planning.plan_path(current_pose, goal)
+    // Interface đơn giản hóa
+    void navigate_to_goal(const Pose& goal) {
+        std::cout << "--- Starting navigation to (" << goal.first << "," << goal.second << ") ---" << std::endl;
+        // 1. Lấy vị trí hiện tại
+        Pose current_pose = localization_->get_current_pose();
 
-        # 3. Thực thi đường đi
-        self._control.execute_path(path)
-        print("--- Navigation finished ---")
+        // 2. Hoạch định đường đi
+        Path path = planning_->plan_path(current_pose, goal);
+
+        // 3. Thực thi đường đi
+        control_->execute_path(path);
+        std::cout << "--- Navigation finished ---" << std::endl;
+    }
+};
 ```
 
-### 3.3. Client Code
+### 3.3. Client Code (`main.cpp`)
 
 Client chỉ cần tương tác với Facade.
 
-```python
-# main.py
-from navigation_facade import NavigationFacade
+```cpp
+#include "navigation_facade.hpp"
 
-if __name__ == "__main__":
-    # Client chỉ cần biết về NavigationFacade
-    navigation = NavigationFacade()
+int main() {
+    // Client chỉ cần biết về NavigationFacade
+    auto navigation = std::make_unique<NavigationFacade>();
 
-    # Thực hiện một tác vụ phức tạp bằng một lời gọi hàm duy nhất
-    navigation.navigate_to_goal((10, 20))
+    // Thực hiện một tác vụ phức tạp bằng một lời gọi hàm duy nhất
+    navigation->navigate_to_goal({10, 20});
+
+    return 0;
+}
 ```
 
 ### Kết quả chạy:
 ```
---- Starting navigation to (10, 20) ---
+--- Starting navigation to (10,20) ---
 [Localization] Getting current robot pose.
-[Planning] Planning path from (0, 0) to (10, 20).
-[Control] Executing path: [(0, 0), (0, 20), (10, 20)]
-[Control] Moving to (0, 0)...
-[Control] Moving to (0, 20)...
-[Control] Moving to (10, 20)...
+[Planning] Planning path from (0,0) to (10,20).
+[Control] Executing path: (0,0) (0,20) (10,20) 
+[Control] Moving to (0,0)...
+[Control] Moving to (0,20)...
+[Control] Moving to (10,20)...
 [Control] Goal reached.
 --- Navigation finished ---
 ```
