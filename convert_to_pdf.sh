@@ -34,56 +34,149 @@ check_dependencies
 # Tạo thư mục output nếu chưa tồn tại
 mkdir -p output
 
-# Tạo file header.tex tạm thời
-cat > header.tex << 'EOL'
+# Tạo file tạm thời để chứa nội dung tổng hợp
+TMP_FILE="output/tmp_combined.md"
+FINAL_PDF="output/design_patterns_ros2.pdf"
+
+# Xóa file tạm nếu đã tồn tại
+rm -f $TMP_FILE
+
+# Tạo file header.tex cho font configuration
+cat << 'EOF' > output/header.tex
+\usepackage{fontspec}
+\setmainfont{NotoSans}[
+    Path = /usr/share/fonts/truetype/noto/,
+    Extension = .ttf,
+    UprightFont = *-Regular,
+    BoldFont = *-Bold,
+    ItalicFont = *-Italic,
+    BoldItalicFont = *-BoldItalic
+]
+\setmonofont{NotoSansMono}[
+    Path = /usr/share/fonts/truetype/noto/,
+    Extension = .ttf,
+    UprightFont = *-Regular,
+    BoldFont = *-Bold
+]
 \usepackage{fancyvrb}
-\fvset{fontsize=\footnotesize}
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},fontsize=\footnotesize}
-\RecustomVerbatimEnvironment{verbatim}{Verbatim}{fontsize=\footnotesize}
-EOL
+\fvset{fontsize=\small}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},fontsize=\small}
+EOF
 
-# Chuyển đổi từng file markdown sang PDF
-convert_markdown_to_pdf() {
-    local input_file=$1
-    local output_file=$2
-    
-    echo "Đang chuyển đổi $input_file sang PDF..."
-    
-    # Chuyển markdown sang PDF trực tiếp bằng pandoc
-    pandoc "$input_file" \
-        -o "$output_file" \
-        --pdf-engine=xelatex \
-        --highlight-style=tango \
-        -V geometry:a4paper \
-        -V geometry:"left=2cm,right=1.5cm,top=1.5cm,bottom=1.5cm" \
-        -V mainfont="Liberation Sans" \
-        -V monofont="Liberation Mono" \
-        -V fontsize=10pt \
-        -V monofontsize=9pt \
-        -V colorlinks=true \
-        -V linkcolor=blue \
-        -V urlcolor=blue \
-        --metadata title="Design Patterns trong ROS2" \
-        --metadata author="ROS2 Design Pattern Guide" \
-        --metadata date="$(date +%Y-%m-%d)" \
-        -H header.tex
-}
+# Thêm trang bìa
+cat << 'EOF' > $TMP_FILE
+# Design Patterns trong ROS2 và Robotics
 
-# Chuyển đổi các file markdown
-convert_markdown_to_pdf "patterns/creational/abstract_factory.md" "output/1_abstract_factory.pdf"
-convert_markdown_to_pdf "patterns/creational/factory.md" "output/2_factory.pdf"
-convert_markdown_to_pdf "patterns/creational/singleton.md" "output/3_singleton.pdf"
-convert_markdown_to_pdf "patterns/structural/adapter.md" "output/4_adapter.pdf"
-convert_markdown_to_pdf "patterns/structural/bridge.md" "output/5_bridge.pdf"
-convert_markdown_to_pdf "patterns/behavioral/observer.md" "output/6_observer.pdf"
-convert_markdown_to_pdf "patterns/behavioral/strategy.md" "output/7_strategy.pdf"
-convert_markdown_to_pdf "patterns/creational/builder.md" "output/8_builder.pdf"
+## Tài liệu tổng hợp về Design Patterns và ứng dụng trong ROS2
 
-# Ghép các file PDF lại
-pdftk output/[1-8]_*.pdf cat output output/design_patterns_ros2.pdf
+### Mục lục
 
-# Dọn dẹp
-rm output/[1-8]_*.pdf
-rm header.tex
+EOF
 
-echo "PDF đã được tạo tại output/design_patterns_ros2.pdf"
+# Thêm README.md vào đầu file (bỏ qua phần header và mục lục)
+tail -n +12 README.md >> $TMP_FILE
+
+# Thêm phân cách section
+echo -e "\n\n---\n\n# Phần 1: Creational Patterns\n" >> $TMP_FILE
+
+# Thêm các Creational Patterns
+echo -e "\n## Abstract Factory Pattern\n" >> $TMP_FILE
+cat patterns/creational/abstract_factory.md >> $TMP_FILE
+
+echo -e "\n## Builder Pattern\n" >> $TMP_FILE
+cat patterns/creational/builder.md >> $TMP_FILE
+
+echo -e "\n## Factory Pattern\n" >> $TMP_FILE
+cat patterns/creational/factory.md >> $TMP_FILE
+
+echo -e "\n## Prototype Pattern\n" >> $TMP_FILE
+cat patterns/creational/prototype.md >> $TMP_FILE
+
+echo -e "\n## Singleton Pattern\n" >> $TMP_FILE
+cat patterns/creational/singleton.md >> $TMP_FILE
+
+# Thêm phân cách section
+echo -e "\n\n---\n\n# Phần 2: Structural Patterns\n" >> $TMP_FILE
+
+# Thêm các Structural Patterns
+echo -e "\n## Adapter Pattern\n" >> $TMP_FILE
+cat patterns/structural/adapter.md >> $TMP_FILE
+
+echo -e "\n## Bridge Pattern\n" >> $TMP_FILE
+cat patterns/structural/bridge.md >> $TMP_FILE
+
+echo -e "\n## Composite Pattern\n" >> $TMP_FILE
+cat patterns/structural/composite.md >> $TMP_FILE
+
+echo -e "\n## Decorator Pattern\n" >> $TMP_FILE
+cat patterns/structural/decorator.md >> $TMP_FILE
+
+echo -e "\n## Facade Pattern\n" >> $TMP_FILE
+cat patterns/structural/facade.md >> $TMP_FILE
+
+echo -e "\n## Flyweight Pattern\n" >> $TMP_FILE
+cat patterns/structural/flyweight.md >> $TMP_FILE
+
+echo -e "\n## Proxy Pattern\n" >> $TMP_FILE
+cat patterns/structural/proxy.md >> $TMP_FILE
+
+# Thêm phân cách section
+echo -e "\n\n---\n\n# Phần 3: Behavioral Patterns\n" >> $TMP_FILE
+
+# Thêm các Behavioral Patterns
+echo -e "\n## Chain of Responsibility Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/chain_of_responsibility.md >> $TMP_FILE
+
+echo -e "\n## Command Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/command.md >> $TMP_FILE
+
+echo -e "\n## Interpreter Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/interpreter.md >> $TMP_FILE
+
+echo -e "\n## Iterator Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/iterator.md >> $TMP_FILE
+
+echo -e "\n## Mediator Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/mediator.md >> $TMP_FILE
+
+echo -e "\n## Memento Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/memento.md >> $TMP_FILE
+
+echo -e "\n## Observer Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/observer.md >> $TMP_FILE
+
+echo -e "\n## State Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/state.md >> $TMP_FILE
+
+echo -e "\n## Strategy Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/strategy.md >> $TMP_FILE
+
+echo -e "\n## Template Method Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/template_method.md >> $TMP_FILE
+
+echo -e "\n## Visitor Pattern\n" >> $TMP_FILE
+cat patterns/behavioral/visitor.md >> $TMP_FILE
+
+# Tạo PDF với pandoc
+echo "Đang tạo PDF..."
+pandoc $TMP_FILE \
+    -f markdown \
+    -t pdf \
+    --toc \
+    --toc-depth=3 \
+    --highlight-style=tango \
+    --pdf-engine=xelatex \
+    -V geometry:margin=1in \
+    -V documentclass=report \
+    -V fontsize=11pt \
+    -V colorlinks=true \
+    -V linkcolor=blue \
+    -V urlcolor=blue \
+    -H output/header.tex \
+    -o $FINAL_PDF
+
+# Xóa files tạm
+rm $TMP_FILE
+rm output/header.tex
+
+echo "Đã tạo file PDF tại: $FINAL_PDF"

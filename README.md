@@ -26,7 +26,7 @@ Design Patterns là những giải pháp thiết kế phần mềm được tái
 
 Documentation này được tổ chức theo 3 nhóm pattern chính:
 
-### 🏗️ [Creational Patterns](./patterns/creational/)
+### [Creational Patterns](./patterns/creational/)
 Các pattern liên quan đến object creation mechanisms
 
 - **[Abstract Factory](./patterns/creational/abstract_factory.md)**: Tạo families của related objects
@@ -35,7 +35,7 @@ Các pattern liên quan đến object creation mechanisms
 - **[Prototype](./patterns/creational/prototype.md)**: Clone objects thay vì tạo mới
 - **[Singleton](./patterns/creational/singleton.md)**: Ensure chỉ có một instance của class
 
-### 🔧 [Structural Patterns](./patterns/structural/)
+### [Structural Patterns](./patterns/structural/)
 Các pattern liên quan đến object composition
 
 - **[Adapter](./patterns/structural/adapter.md)**: Interface compatibility giữa incompatible classes
@@ -46,7 +46,7 @@ Các pattern liên quan đến object composition
 - **[Flyweight](./patterns/structural/flyweight.md)**: Giảm chi phí bộ nhớ bằng cách chia sẻ trạng thái chung.
 - **[Proxy](./patterns/structural/proxy.md)**: Cung cấp một đối tượng thay thế để kiểm soát quyền truy cập vào một đối tượng khác.
 
-### 🎯 [Behavioral Patterns](./patterns/behavioral/)
+### [Behavioral Patterns](./patterns/behavioral/)
 Các pattern liên quan đến communication giữa objects
 
 - **[Chain of Responsibility](./patterns/behavioral/chain_of_responsibility.md)**: Xử lý requests theo chuỗi handlers
