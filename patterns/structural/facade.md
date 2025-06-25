@@ -2,171 +2,295 @@
 
 ## 1. Giới thiệu
 
-Facade là một mẫu thiết kế cấu trúc (Structural Design Pattern) cung cấp một interface đơn giản hóa cho một thư viện, một framework, hoặc bất kỳ một tập hợp các class phức tạp nào khác.
+Facade Pattern là một mẫu thiết kế thuộc nhóm Structural Pattern, cung cấp một interface đơn giản cho một hệ thống phức tạp. Pattern này tạo ra một lớp facade đóng vai trò như một "mặt tiền" đơn giản, che giấu sự phức tạp của hệ thống bên dưới.
 
-Trong ROS2 và robotics, hệ thống thường bao gồm nhiều subsystem phức tạp (ví dụ: navigation, manipulation, perception). Mỗi subsystem lại có thể bao gồm nhiều ROS2 nodes, topics, services, và actions. Facade Pattern giúp che giấu sự phức tạp này đằng sau một API đơn giản, dễ sử dụng.
+Trong ROS2 và robotics, Facade Pattern thường được sử dụng để:
+- Đơn giản hóa việc tương tác với robot
+- Gom nhóm nhiều ROS2 service/action thành một interface thống nhất
+- Tạo API cao cấp cho hệ thống phức tạp
+- Đóng gói các subsystem thành một interface dễ sử dụng
 
-**Ví dụ:**
-- Cung cấp một phương thức `robot.navigate_to(pose)` thay vì yêu cầu người dùng phải tương tác trực tiếp với planner, controller, và map server.
-- Cung cấp một hàm `robot.pick_object(object_id)` thay vì phải quản lý chuỗi các hành động của MoveIt2.
+## 2. Vấn đề
 
-## 2. Cấu trúc
+Trong robotics, chúng ta thường gặp các hệ thống phức tạp với nhiều thành phần, ví dụ:
+- Robot arm với nhiều joint controllers
+- Navigation system với planner, controller, localizer
+- Perception system với nhiều sensors và algorithms
+- Multi-robot system với nhiều robot và coordinators
 
-- **Facade:**
-  - Là class cung cấp interface đơn giản cho client.
-  - Biết về các subsystem mà nó cần để thực hiện yêu cầu của client.
-  - Ủy thác (delegate) các lời gọi từ client đến các đối tượng phù hợp trong subsystem.
+Việc làm việc trực tiếp với các thành phần này sẽ dẫn đến:
+- Code phức tạp và khó bảo trì
+- Coupling chặt giữa các thành phần
+- Khó thay đổi implementation
+- Learning curve cao cho người mới
 
-- **Subsystem Classes:**
-  - Là các class implement chức năng phức tạp của hệ thống.
-  - Chúng không biết về sự tồn tại của Facade. Chúng hoạt động độc lập và có thể được sử dụng trực tiếp bởi client nếu cần.
+## 3. Giải pháp
 
-- **Client:**
-  - Sử dụng Facade để tương tác với subsystem một cách đơn giản.
-  - Client không cần biết về sự phức tạp bên trong của subsystem.
+Facade Pattern giải quyết vấn đề bằng cách:
+1. Tạo một interface đơn giản cho hệ thống phức tạp
+2. Che giấu chi tiết implementation
+3. Giảm coupling giữa client và subsystems
+4. Cung cấp entry point duy nhất cho hệ thống
 
-## 3. Ví dụ trong C++ (ROS2)
-
-Hãy tạo một Facade cho một hệ thống navigation đơn giản trong C++. Hệ thống này bao gồm 3 subsystem:
-1.  `LocalizationSystem`: Cung cấp vị trí hiện tại của robot.
-2.  `PlanningSystem`: Tìm một đường đi từ điểm A đến điểm B.
-3.  `ControlSystem`: Điều khiển robot di chuyển theo đường đi đã hoạch định.
-
-### 3.1. Subsystem Classes (`subsystem.hpp`)
-
-Đây là các class giả lập cho các subsystem phức tạp.
+## 4. Ví dụ thực tế: Robot Arm Control
 
 ```cpp
-#pragma once
-#include <iostream>
-#include <vector>
-#include <utility>
-
-using Pose = std::pair<int, int>;
-using Path = std::vector<Pose>;
-
-// Một phần của subsystem phức tạp
-class LocalizationSystem {
+// Subsystem classes
+class JointController {
 public:
-    Pose get_current_pose() {
-        std::cout << "[Localization] Getting current robot pose." << std::endl;
-        return {0, 0};
+    void setPosition(int joint_id, double position) {
+        RCLCPP_INFO(logger_, "Setting joint %d to position %f", joint_id, position);
+        // Implementation
     }
-};
 
-// Một phần của subsystem phức tạp
-class PlanningSystem {
-public:
-    Path plan_path(const Pose& start, const Pose& goal) {
-        std::cout << "[Planning] Planning path from (" << start.first << "," << start.second 
-                  << ") to (" << goal.first << "," << goal.second << ")." << std::endl;
-        return {start, {start.first, goal.second}, goal};
+    void setVelocity(int joint_id, double velocity) {
+        RCLCPP_INFO(logger_, "Setting joint %d velocity to %f", joint_id, velocity);
+        // Implementation
     }
-};
 
-// Một phần của subsystem phức tạp
-class ControlSystem {
-public:
-    void execute_path(const Path& path) {
-        std::cout << "[Control] Executing path: ";
-        for(const auto& p : path) std::cout << "(" << p.first << "," << p.second << ") ";
-        std::cout << std::endl;
-        
-        for (const auto& point : path) {
-            std::cout << "[Control] Moving to (" << point.first << "," << point.second << ")..." << std::endl;
-        }
-        std::cout << "[Control] Goal reached." << std::endl;
-    }
-};
-```
-
-### 3.2. Navigation Facade (`navigation_facade.hpp`)
-
-Facade này cung cấp một phương thức `navigate_to_goal` duy nhất.
-
-```cpp
-#pragma once
-#include "subsystem.hpp"
-#include <memory>
-
-class NavigationFacade {
 private:
-    std::unique_ptr<LocalizationSystem> localization_;
-    std::unique_ptr<PlanningSystem> planning_;
-    std::unique_ptr<ControlSystem> control_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("JointController");
+};
 
+class GripperController {
 public:
-    NavigationFacade() 
-        : localization_(std::make_unique<LocalizationSystem>()),
-          planning_(std::make_unique<PlanningSystem>()),
-          control_(std::make_unique<ControlSystem>()) {}
-
-    // Interface đơn giản hóa
-    void navigate_to_goal(const Pose& goal) {
-        std::cout << "--- Starting navigation to (" << goal.first << "," << goal.second << ") ---" << std::endl;
-        // 1. Lấy vị trí hiện tại
-        Pose current_pose = localization_->get_current_pose();
-
-        // 2. Hoạch định đường đi
-        Path path = planning_->plan_path(current_pose, goal);
-
-        // 3. Thực thi đường đi
-        control_->execute_path(path);
-        std::cout << "--- Navigation finished ---" << std::endl;
+    void open(double width) {
+        RCLCPP_INFO(logger_, "Opening gripper to width %f", width);
+        // Implementation
     }
+
+    void close(double force) {
+        RCLCPP_INFO(logger_, "Closing gripper with force %f", force);
+        // Implementation
+    }
+
+private:
+    rclcpp::Logger logger_ = rclcpp::get_logger("GripperController");
+};
+
+class CollisionChecker {
+public:
+    bool checkCollision(const std::vector<double>& joint_positions) {
+        RCLCPP_INFO(logger_, "Checking collision for joint positions");
+        // Implementation
+        return false;
+    }
+
+private:
+    rclcpp::Logger logger_ = rclcpp::get_logger("CollisionChecker");
+};
+
+class TrajectoryPlanner {
+public:
+    std::vector<std::vector<double>> planPath(
+        const std::vector<double>& start,
+        const std::vector<double>& goal) {
+        RCLCPP_INFO(logger_, "Planning path from start to goal");
+        // Implementation
+        return {start, goal}; // Simplified
+    }
+
+private:
+    rclcpp::Logger logger_ = rclcpp::get_logger("TrajectoryPlanner");
+};
+
+// Facade
+class RobotArmFacade {
+public:
+    RobotArmFacade()
+        : node_(std::make_shared<rclcpp::Node>("robot_arm_facade")) {
+        // Initialize subsystems
+        joint_controller_ = std::make_unique<JointController>();
+        gripper_controller_ = std::make_unique<GripperController>();
+        collision_checker_ = std::make_unique<CollisionChecker>();
+        trajectory_planner_ = std::make_unique<TrajectoryPlanner>();
+    }
+
+    // High-level methods
+    bool pickObject(const geometry_msgs::msg::Pose& object_pose) {
+        RCLCPP_INFO(node_->get_logger(), "Picking object at pose: x=%f, y=%f, z=%f",
+                   object_pose.position.x,
+                   object_pose.position.y,
+                   object_pose.position.z);
+
+        try {
+            // 1. Plan path to pre-grasp pose
+            auto pre_grasp_joints = computeInverseKinematics(object_pose);
+            if (pre_grasp_joints.empty()) {
+                RCLCPP_ERROR(node_->get_logger(), "Failed to compute IK for pre-grasp pose");
+                return false;
+            }
+
+            // 2. Check collision
+            if (collision_checker_->checkCollision(pre_grasp_joints)) {
+                RCLCPP_ERROR(node_->get_logger(), "Path to object is blocked");
+                return false;
+            }
+
+            // 3. Plan and execute trajectory
+            auto path = trajectory_planner_->planPath(getCurrentJointPositions(), pre_grasp_joints);
+            executeTrajectory(path);
+
+            // 4. Open gripper
+            gripper_controller_->open(0.08); // 8cm opening
+
+            // 5. Move to grasp pose
+            auto grasp_joints = computeInverseKinematics(object_pose);
+            executeTrajectory({grasp_joints});
+
+            // 6. Close gripper
+            gripper_controller_->close(10.0); // 10N force
+
+            return true;
+
+        } catch (const std::exception& e) {
+            RCLCPP_ERROR(node_->get_logger(), "Pick operation failed: %s", e.what());
+            return false;
+        }
+    }
+
+    bool placeObject(const geometry_msgs::msg::Pose& place_pose) {
+        RCLCPP_INFO(node_->get_logger(), "Placing object at pose: x=%f, y=%f, z=%f",
+                   place_pose.position.x,
+                   place_pose.position.y,
+                   place_pose.position.z);
+
+        try {
+            // 1. Plan path to place pose
+            auto place_joints = computeInverseKinematics(place_pose);
+            if (place_joints.empty()) {
+                RCLCPP_ERROR(node_->get_logger(), "Failed to compute IK for place pose");
+                return false;
+            }
+
+            // 2. Check collision
+            if (collision_checker_->checkCollision(place_joints)) {
+                RCLCPP_ERROR(node_->get_logger(), "Path to place pose is blocked");
+                return false;
+            }
+
+            // 3. Plan and execute trajectory
+            auto path = trajectory_planner_->planPath(getCurrentJointPositions(), place_joints);
+            executeTrajectory(path);
+
+            // 4. Open gripper to release object
+            gripper_controller_->open(0.08);
+
+            // 5. Move back to home position
+            moveToHome();
+
+            return true;
+
+        } catch (const std::exception& e) {
+            RCLCPP_ERROR(node_->get_logger(), "Place operation failed: %s", e.what());
+            return false;
+        }
+    }
+
+    void moveToHome() {
+        RCLCPP_INFO(node_->get_logger(), "Moving to home position");
+        std::vector<double> home_position = {0.0, -1.57, 0.0, -1.57, 0.0, 0.0};
+        auto path = trajectory_planner_->planPath(getCurrentJointPositions(), home_position);
+        executeTrajectory(path);
+    }
+
+private:
+    std::vector<double> computeInverseKinematics(const geometry_msgs::msg::Pose& pose) {
+        // Implementation of inverse kinematics
+        return std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // Simplified
+    }
+
+    std::vector<double> getCurrentJointPositions() {
+        // Implementation to get current joint positions
+        return std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // Simplified
+    }
+
+    void executeTrajectory(const std::vector<std::vector<double>>& path) {
+        for (const auto& point : path) {
+            for (size_t i = 0; i < point.size(); ++i) {
+                joint_controller_->setPosition(i, point[i]);
+            }
+        }
+    }
+
+    std::shared_ptr<rclcpp::Node> node_;
+    std::unique_ptr<JointController> joint_controller_;
+    std::unique_ptr<GripperController> gripper_controller_;
+    std::unique_ptr<CollisionChecker> collision_checker_;
+    std::unique_ptr<TrajectoryPlanner> trajectory_planner_;
 };
 ```
 
-### 3.3. Client Code (`main.cpp`)
+## 5. Sử dụng trong ROS2
 
-Client chỉ cần tương tác với Facade.
+Ví dụ về cách sử dụng Facade Pattern trong một ROS2 node:
 
 ```cpp
-#include "navigation_facade.hpp"
+class RobotArmNode : public rclcpp::Node {
+public:
+    RobotArmNode() : Node("robot_arm_node") {
+        // Khởi tạo facade
+        arm_facade_ = std::make_unique<RobotArmFacade>();
 
-int main() {
-    // Client chỉ cần biết về NavigationFacade
-    auto navigation = std::make_unique<NavigationFacade>();
+        // Tạo services
+        pick_service_ = create_service<custom_msgs::srv::PickObject>(
+            "pick_object",
+            [this](const std::shared_ptr<custom_msgs::srv::PickObject::Request> request,
+                   std::shared_ptr<custom_msgs::srv::PickObject::Response> response) {
+                response->success = arm_facade_->pickObject(request->object_pose);
+            });
 
-    // Thực hiện một tác vụ phức tạp bằng một lời gọi hàm duy nhất
-    navigation->navigate_to_goal({10, 20});
+        place_service_ = create_service<custom_msgs::srv::PlaceObject>(
+            "place_object",
+            [this](const std::shared_ptr<custom_msgs::srv::PlaceObject::Request> request,
+                   std::shared_ptr<custom_msgs::srv::PlaceObject::Response> response) {
+                response->success = arm_facade_->placeObject(request->place_pose);
+            });
 
-    return 0;
-}
+        home_service_ = create_service<std_srvs::srv::Trigger>(
+            "move_to_home",
+            [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                   std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+                arm_facade_->moveToHome();
+                response->success = true;
+            });
+    }
+
+private:
+    std::unique_ptr<RobotArmFacade> arm_facade_;
+    rclcpp::Service<custom_msgs::srv::PickObject>::SharedPtr pick_service_;
+    rclcpp::Service<custom_msgs::srv::PlaceObject>::SharedPtr place_service_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr home_service_;
+};
 ```
 
-### Kết quả chạy:
-```
---- Starting navigation to (10,20) ---
-[Localization] Getting current robot pose.
-[Planning] Planning path from (0,0) to (10,20).
-[Control] Executing path: (0,0) (0,20) (10,20) 
-[Control] Moving to (0,0)...
-[Control] Moving to (0,20)...
-[Control] Moving to (10,20)...
-[Control] Goal reached.
---- Navigation finished ---
-```
+## 6. Lợi ích
 
-## 4. Best Practices
+1. **Đơn giản hóa**: Cung cấp interface đơn giản cho hệ thống phức tạp
+2. **Loose coupling**: Giảm sự phụ thuộc giữa client và subsystems
+3. **Encapsulation**: Che giấu chi tiết implementation
+4. **Maintainability**: Dễ dàng thay đổi subsystems mà không ảnh hưởng tới client
 
-- **Don't Block Access:** Facade nên đơn giản hóa việc truy cập, nhưng không nên là cách duy nhất. Cho phép các client "nâng cao" có thể truy cập trực tiếp vào các subsystem nếu họ cần chức năng phức tạp hơn.
-- **Single Responsibility:** Một Facade nên đại diện cho một subsystem logic duy nhất. Tránh tạo ra các "God Object" Facade quản lý mọi thứ trong hệ thống.
-- **ROS2 Integration:**
-  - Facade có thể là một ROS2 Node, quản lý các client cho các service và action của subsystem.
-  - Cung cấp một action server (ví dụ: `NavigateToPose.action`) làm Facade cho một chuỗi các hoạt động phức tạp.
+## 7. Khi nào sử dụng
 
-## 5. Mở rộng
+- Khi cần interface đơn giản cho hệ thống phức tạp
+- Khi muốn tạo entry point cho các subsystem
+- Khi cần giảm coupling giữa subsystems
+- Khi muốn layer hóa hệ thống
 
-- **Multiple Facades:** Có thể có nhiều Facade cho cùng một subsystem, mỗi Facade cung cấp một tập hợp các chức năng đơn giản hóa cho các loại client khác nhau.
+## 8. Lưu ý
 
-## 6. Testing
+1. Thiết kế Facade:
+   - Không nên làm Facade quá phức tạp
+   - Chỉ expose những chức năng cần thiết
+   - Giữ interface đơn giản và rõ ràng
 
-- **Integration Test:** Test Facade bằng cách kiểm tra xem nó có gọi đúng các subsystem theo đúng thứ tự và với đúng tham số hay không. Bạn có thể sử dụng mock object cho các subsystem để cô lập Facade trong quá trình test.
+2. Quản lý phụ thuộc:
+   - Sử dụng dependency injection khi có thể
+   - Tránh tight coupling với subsystems
+   - Cân nhắc sử dụng interface cho subsystems
 
-## 7. Use Cases trong Robotics
-
-- **Navigation Stack (Nav2):** Cung cấp một action server `NavigateToPose` làm facade cho toàn bộ quá trình navigation, bao gồm global planning, local planning, và recovery behaviors.
-- **Manipulation Stack (MoveIt2):** `MoveGroupInterface` là một facade cho việc hoạch định và thực thi chuyển động của cánh tay robot. Nó che giấu sự phức tạp của việc tương tác với planning scene, inverse kinematics solvers, và trajectory controllers.
-- **Robot Startup/Shutdown:** Một `SystemManager` node có thể hoạt động như một facade để khởi tạo, cấu hình và tắt tất cả các driver và các node phần mềm khác của robot một cách có trật tự.
-- **Perception Pipeline:** Một facade có thể đơn giản hóa việc lấy thông tin đối tượng từ một pipeline perception phức tạp. Ví dụ, một phương thức `detect_objects()` có thể ẩn đi các bước như lấy ảnh, tiền xử lý, chạy model object detection, và hậu xử lý kết quả.
+3. Trong ROS2:
+   - Sử dụng ROS2 services/actions cho các thao tác dài
+   - Xử lý lỗi và timeout phù hợp
+   - Cung cấp feedback về trạng thái thao tác 

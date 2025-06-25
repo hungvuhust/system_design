@@ -2,179 +2,285 @@
 
 ## 1. Giới thiệu
 
-Decorator là một mẫu thiết kế cấu trúc (Structural Design Pattern) cho phép bạn thêm các hành vi mới vào các đối tượng một cách linh hoạt bằng cách đặt chúng bên trong các đối tượng "wrapper" đặc biệt. Wrapper này chứa cùng một interface với đối tượng gốc.
+Decorator Pattern là một mẫu thiết kế thuộc nhóm Structural Pattern, cho phép thêm các tính năng mới cho đối tượng một cách linh hoạt mà không làm thay đổi cấu trúc của đối tượng gốc.
 
-Trong ROS2 và robotics, Decorator Pattern cực kỳ hữu ích để mở rộng chức năng của một component mà không cần thay đổi code của nó. Đây là một giải pháp thay thế cho việc kế thừa (subclassing) để mở rộng chức năng.
+Trong ROS2 và robotics, Decorator Pattern thường được sử dụng để:
+- Thêm các tính năng xử lý cho sensor data
+- Mở rộng chức năng của robot controllers
+- Tăng cường khả năng của navigation algorithms
+- Thêm logging, monitoring cho các node
 
-**Ví dụ:**
-- Gói một `PathPlanner` cơ bản với một `TimingDecorator` để đo thời gian thực thi.
-- Thêm một `SafetyDecorator` vào một `MotorController` để kiểm tra các giới hạn an toàn trước khi gửi lệnh.
-- Gói một `SensorPublisher` với một `FilterDecorator` để lọc nhiễu từ dữ liệu cảm biến trước khi publish.
+## 2. Vấn đề
 
-## 2. Cấu trúc
+Trong robotics, chúng ta thường gặp các tình huống cần mở rộng chức năng của một component, ví dụ:
+- Thêm bộ lọc nhiễu cho sensor data
+- Thêm giới hạn tốc độ cho robot controller
+- Thêm chức năng ghi log cho navigation
+- Thêm validation cho các message
 
-Decorator Pattern có các thành phần sau:
+Việc thêm tính năng bằng cách kế thừa sẽ dẫn đến:
+- Code cứng nhắc và khó mở rộng
+- Số lượng class tăng nhanh
+- Khó kết hợp nhiều tính năng
 
-- **Component:**
-  - Là một interface chung cho cả đối tượng gốc (concrete component) và các decorator.
-  - Ví dụ: `PathPlanner` interface với phương thức `plan()`.
+## 3. Giải pháp
 
-- **Concrete Component:**
-  - Là class của đối tượng gốc mà chúng ta muốn thêm chức năng.
-  - Implement interface `Component`.
-  - Ví dụ: `AStarPlanner`, `RRTPlanner`.
+Decorator Pattern giải quyết vấn đề bằng cách:
+1. Tạo wrapper class implement cùng interface với component gốc
+2. Wrapper class chứa reference đến component gốc
+3. Wrapper class có thể thêm hành vi trước/sau khi gọi method của component gốc
 
-- **Decorator:**
-  - Là một abstract class đóng vai trò là base class cho các concrete decorator.
-  - Chứa một tham chiếu đến một đối tượng `Component` (có thể là concrete component hoặc một decorator khác).
-  - Ủy thác (delegate) tất cả các lời gọi đến đối tượng `Component` mà nó gói.
+## 4. Ví dụ thực tế: Robot Controller
 
-- **Concrete Decorator:**
-  - Là các class wrapper cụ thể, implement chức năng bổ sung.
-  - Chúng thực thi hành vi của mình trước hoặc sau khi ủy thác lời gọi đến đối tượng được gói.
-  - Ví dụ: `TimingDecorator`, `LoggingDecorator`, `SafetyCheckDecorator`.
+```cpp
+// Base interface
+class RobotController {
+public:
+    virtual ~RobotController() = default;
+    virtual geometry_msgs::msg::Twist computeVelocity(
+        const geometry_msgs::msg::Pose& current,
+        const geometry_msgs::msg::Pose& target) = 0;
+};
 
-- **Client:**
-  - Có thể gói các component nhiều lần với các decorator khác nhau.
+// Concrete component
+class DifferentialDriveController : public RobotController {
+public:
+    geometry_msgs::msg::Twist computeVelocity(
+        const geometry_msgs::msg::Pose& current,
+        const geometry_msgs::msg::Pose& target) override {
+        
+        geometry_msgs::msg::Twist cmd_vel;
+        // Tính toán vận tốc cơ bản
+        cmd_vel.linear.x = 0.5;  // m/s
+        cmd_vel.angular.z = 0.2; // rad/s
+        return cmd_vel;
+    }
+};
 
-## 3. Ví dụ trong ROS2
+// Base decorator
+class ControllerDecorator : public RobotController {
+protected:
+    std::shared_ptr<RobotController> controller_;
 
-Giả sử chúng ta có một hệ thống hoạch định đường đi (`PathPlanner`) và muốn thêm chức năng đo thời gian và ghi log mà không sửa đổi các planner gốc.
+public:
+    ControllerDecorator(std::shared_ptr<RobotController> controller)
+        : controller_(controller) {}
 
-### 3.1. Component Interface
+    geometry_msgs::msg::Twist computeVelocity(
+        const geometry_msgs::msg::Pose& current,
+        const geometry_msgs::msg::Pose& target) override {
+        return controller_->computeVelocity(current, target);
+    }
+};
 
-```python
-# path_planner.py
-from abc import ABC, abstractmethod
-from typing import List, Tuple
+// Concrete decorator: Speed Limiter
+class SpeedLimiterDecorator : public ControllerDecorator {
+private:
+    double max_linear_speed_;
+    double max_angular_speed_;
 
-class PathPlanner(ABC):
-    """Component Interface"""
-    @abstractmethod
-    def plan(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
-        pass
+public:
+    SpeedLimiterDecorator(
+        std::shared_ptr<RobotController> controller,
+        double max_linear = 1.0,
+        double max_angular = 0.5)
+        : ControllerDecorator(controller)
+        , max_linear_speed_(max_linear)
+        , max_angular_speed_(max_angular) {}
+
+    geometry_msgs::msg::Twist computeVelocity(
+        const geometry_msgs::msg::Pose& current,
+        const geometry_msgs::msg::Pose& target) override {
+        
+        auto cmd_vel = controller_->computeVelocity(current, target);
+        
+        // Giới hạn tốc độ
+        cmd_vel.linear.x = std::min(std::abs(cmd_vel.linear.x), max_linear_speed_) *
+                          (cmd_vel.linear.x >= 0 ? 1 : -1);
+        cmd_vel.angular.z = std::min(std::abs(cmd_vel.angular.z), max_angular_speed_) *
+                           (cmd_vel.angular.z >= 0 ? 1 : -1);
+        
+        return cmd_vel;
+    }
+};
+
+// Concrete decorator: Obstacle Avoider
+class ObstacleAvoiderDecorator : public ControllerDecorator {
+private:
+    std::shared_ptr<sensor_msgs::msg::LaserScan> latest_scan_;
+    double safe_distance_;
+
+public:
+    ObstacleAvoiderDecorator(
+        std::shared_ptr<RobotController> controller,
+        double safe_distance = 0.5)
+        : ControllerDecorator(controller)
+        , safe_distance_(safe_distance) {}
+
+    void updateScan(const sensor_msgs::msg::LaserScan::SharedPtr scan) {
+        latest_scan_ = scan;
+    }
+
+    geometry_msgs::msg::Twist computeVelocity(
+        const geometry_msgs::msg::Pose& current,
+        const geometry_msgs::msg::Pose& target) override {
+        
+        auto cmd_vel = controller_->computeVelocity(current, target);
+        
+        if (latest_scan_) {
+            // Kiểm tra khoảng cách an toàn
+            bool obstacle_detected = false;
+            for (const auto& range : latest_scan_->ranges) {
+                if (range < safe_distance_) {
+                    obstacle_detected = true;
+                    break;
+                }
+            }
+            
+            // Dừng robot nếu phát hiện chướng ngại vật
+            if (obstacle_detected) {
+                cmd_vel.linear.x = 0.0;
+                cmd_vel.angular.z = 0.0;
+            }
+        }
+        
+        return cmd_vel;
+    }
+};
+
+// Concrete decorator: Logger
+class LoggerDecorator : public ControllerDecorator {
+private:
+    rclcpp::Logger logger_;
+
+public:
+    LoggerDecorator(
+        std::shared_ptr<RobotController> controller,
+        const rclcpp::Logger& logger)
+        : ControllerDecorator(controller)
+        , logger_(logger) {}
+
+    geometry_msgs::msg::Twist computeVelocity(
+        const geometry_msgs::msg::Pose& current,
+        const geometry_msgs::msg::Pose& target) override {
+        
+        RCLCPP_INFO(logger_, "Computing velocity command");
+        RCLCPP_DEBUG(logger_, "Current pose: x=%.2f, y=%.2f",
+                    current.position.x, current.position.y);
+        RCLCPP_DEBUG(logger_, "Target pose: x=%.2f, y=%.2f",
+                    target.position.x, target.position.y);
+        
+        auto start_time = std::chrono::steady_clock::now();
+        auto cmd_vel = controller_->computeVelocity(current, target);
+        auto end_time = std::chrono::steady_clock::now();
+        
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            end_time - start_time).count();
+        
+        RCLCPP_INFO(logger_, "Velocity computed in %ld ms: linear=%.2f, angular=%.2f",
+                   duration, cmd_vel.linear.x, cmd_vel.angular.z);
+        
+        return cmd_vel;
+    }
+};
 ```
 
-### 3.2. Concrete Component
+## 5. Sử dụng trong ROS2
 
-Đây là planner gốc, thực hiện thuật toán A*.
+Ví dụ về cách sử dụng Decorator Pattern trong một ROS2 node:
 
-```python
-# concrete_planners.py
-from path_planner import PathPlanner
-from typing import List, Tuple
+```cpp
+class DecoratedControllerNode : public rclcpp::Node {
+public:
+    DecoratedControllerNode()
+        : Node("decorated_controller") {
+        
+        // Khởi tạo base controller
+        auto base_controller = std::make_shared<DifferentialDriveController>();
+        
+        // Thêm các decorator
+        auto speed_limited = std::make_shared<SpeedLimiterDecorator>(
+            base_controller, 0.8, 0.4);
+        
+        auto obstacle_aware = std::make_shared<ObstacleAvoiderDecorator>(
+            speed_limited, 0.3);
+        
+        controller_ = std::make_shared<LoggerDecorator>(
+            obstacle_aware, get_logger());
+        
+        // Subscribers
+        pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+            "current_pose", 10,
+            std::bind(&DecoratedControllerNode::poseCallback, this, std::placeholders::_1));
+        
+        target_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+            "target_pose", 10,
+            std::bind(&DecoratedControllerNode::targetCallback, this, std::placeholders::_1));
+        
+        scan_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
+            "scan", 10,
+            [this, obstacle_aware](const sensor_msgs::msg::LaserScan::SharedPtr scan) {
+                obstacle_aware->updateScan(scan);
+            });
+        
+        // Publisher
+        cmd_vel_pub_ = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+    }
 
-class AStarPlanner(PathPlanner):
-    """Concrete Component"""
-    def plan(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
-        print(f"Planning path from {start} to {goal} using A* algorithm.")
-        # Giả lập một thuật toán phức tạp
-        path = [start, (start[0], goal[1]), goal]
-        print("Path found.")
-        return path
+private:
+    void poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
+        current_pose_ = msg->pose;
+        publishVelocity();
+    }
+    
+    void targetCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
+        target_pose_ = msg->pose;
+        publishVelocity();
+    }
+    
+    void publishVelocity() {
+        if (current_pose_ && target_pose_) {
+            auto cmd_vel = controller_->computeVelocity(*current_pose_, *target_pose_);
+            cmd_vel_pub_->publish(cmd_vel);
+        }
+    }
+
+    std::shared_ptr<RobotController> controller_;
+    std::optional<geometry_msgs::msg::Pose> current_pose_;
+    std::optional<geometry_msgs::msg::Pose> target_pose_;
+    
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
+};
 ```
 
-### 3.3. Decorator Base Class
+## 6. Lợi ích
 
-```python
-# planner_decorator.py
-from path_planner import PathPlanner
-from typing import List, Tuple
+1. **Tính linh hoạt**: Dễ dàng thêm/xóa tính năng trong runtime
+2. **Single Responsibility**: Mỗi decorator chỉ xử lý một chức năng
+3. **Open/Closed**: Mở rộng chức năng mà không sửa code hiện có
+4. **Tái sử dụng**: Có thể kết hợp các decorator theo nhiều cách khác nhau
 
-class PlannerDecorator(PathPlanner):
-    """Decorator Base Class"""
-    _planner: PathPlanner = None
+## 7. Khi nào sử dụng
 
-    def __init__(self, planner: PathPlanner) -> None:
-        self._planner = planner
+- Khi cần thêm tính năng cho đối tượng mà không muốn thay đổi code gốc
+- Khi muốn tính năng có thể được thêm/xóa trong runtime
+- Khi kế thừa không phải là giải pháp tốt
+- Khi cần kết hợp nhiều tính năng một cách linh hoạt
 
-    @property
-    def planner(self) -> PathPlanner:
-        return self._planner
+## 8. Lưu ý
 
-    def plan(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
-        return self._planner.plan(start, goal)
-```
+1. Thứ tự decorator có thể ảnh hưởng đến kết quả:
+   - SpeedLimiter -> ObstacleAvoider khác với ObstacleAvoider -> SpeedLimiter
+   - Cần cân nhắc thứ tự hợp lý dựa trên logic nghiệp vụ
 
-### 3.4. Concrete Decorators
+2. Quản lý phụ thuộc:
+   - Sử dụng dependency injection để inject các decorator
+   - Tránh hardcode thứ tự decorator
 
-Các decorator này thêm chức năng đo thời gian và ghi log.
-
-```python
-# concrete_decorators.py
-from planner_decorator import PlannerDecorator
-from typing import List, Tuple
-import time
-
-class TimingDecorator(PlannerDecorator):
-    """Concrete Decorator for timing"""
-    def plan(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
-        start_time = time.time()
-        result = super().plan(start, goal)
-        end_time = time.time()
-        print(f"[TimingDecorator] Planning took {end_time - start_time:.4f} seconds.")
-        return result
-
-class LoggingDecorator(PlannerDecorator):
-    """Concrete Decorator for logging"""
-    def plan(self, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
-        print(f"[LoggingDecorator] Calling planner for path from {start} to {goal}.")
-        result = super().plan(start, goal)
-        print(f"[LoggingDecorator] Planner finished execution. Path has {len(result)} points.")
-        return result
-```
-
-### 3.5. Client Code
-
-Client có thể kết hợp các decorator một cách linh hoạt.
-
-```python
-# main.py
-from concrete_planners import AStarPlanner
-from concrete_decorators import TimingDecorator, LoggingDecorator
-
-if __name__ == "__main__":
-    # 1. Planner gốc
-    simple_planner = AStarPlanner()
-    print("--- Simple Planner ---")
-    path1 = simple_planner.plan((0, 0), (10, 10))
-    print(f"Resulting path: {path1}")
-
-    # 2. Gói planner với TimingDecorator
-    timed_planner = TimingDecorator(simple_planner)
-    print("\n--- Timed Planner ---")
-    path2 = timed_planner.plan((0, 0), (20, 20))
-    print(f"Resulting path: {path2}")
-
-    # 3. Gói planner với cả hai decorator
-    # Thứ tự gói quan trọng: Logging -> Timing -> Planner
-    logged_timed_planner = LoggingDecorator(TimingDecorator(AStarPlanner()))
-    print("\n--- Logged and Timed Planner ---")
-    path3 = logged_timed_planner.plan((5, 5), (25, 25))
-    print(f"Resulting path: {path3}")
-```
-
-## 4. Best Practices
-
-- **Single Responsibility:** Mỗi decorator chỉ nên thêm một chức năng duy nhất. Điều này giúp chúng dễ dàng được kết hợp và tái sử dụng.
-- **Interface Consistency:** Decorator phải tuân thủ cùng một interface với đối tượng mà nó gói. Client không nên cần biết nó đang làm việc với một decorator hay một component gốc.
-- **Order of Decoration:** Lưu ý rằng thứ tự áp dụng các decorator có thể quan trọng. Ví dụ, `Logging(Timing(Planner))` sẽ khác với `Timing(Logging(Planner))` về output log.
-- **ROS2 Integration:**
-  - Sử dụng Decorator để gói các ROS2 client, server, publisher, subscriber.
-  - Ví dụ: một decorator cho một `rclpy.Publisher` có thể tự động đếm số lượng message được gửi hoặc kiểm tra tính hợp lệ của message trước khi publish.
-
-## 5. Mở rộng
-
-- **Decorator và Factory:** Kết hợp Decorator với Factory Pattern để tạo ra các đối tượng đã được trang trí sẵn dựa trên một cấu hình. Ví dụ, một factory có thể trả về một planner đã được gói với logging và timing nếu chế độ debug được bật.
-
-## 6. Testing
-
-- **Unit Test:** Test từng `ConcreteDecorator` một cách độc lập. Sử dụng mock object cho `Component` được gói để chỉ kiểm tra chức năng của decorator.
-- **Integration Test:** Test các sự kết hợp khác nhau của các decorator để đảm bảo chúng hoạt động tốt với nhau và với concrete component.
-
-## 7. Use Cases trong Robotics
-
-- **Safety Layers:** Gói một `ActuatorInterface` với một `SafetyDecorator` để kiểm tra các lệnh điều khiển có nằm trong giới hạn an toàn không (vận tốc, gia tốc, lực tối đa) trước khi gửi đến phần cứng.
-- **Data Transformation:** Một decorator quanh một `SensorInterface` có thể chuyển đổi dữ liệu (ví dụ: từ đơn vị raw sang đơn vị SI, từ hệ tọa độ camera sang hệ tọa độ robot) trước khi cung cấp cho các phần còn lại của hệ thống.
-- **Caching:** Một decorator có thể thêm chức năng caching cho các hoạt động tốn kém. Ví dụ, một `IKServerDecorator` có thể cache kết quả của các truy vấn Inverse Kinematics cho các vị trí end-effector đã được yêu cầu gần đây.
-- **Fault Tolerance:** Một decorator có thể thêm logic thử lại (retry) hoặc xử lý lỗi cho một service client. Nếu một lời gọi service thất bại, decorator có thể tự động thử lại một vài lần trước khi báo lỗi.
+3. Trong ROS2:
+   - Sử dụng shared_ptr để quản lý memory
+   - Cẩn thận với thread safety khi decorator truy cập shared resources
+   - Xử lý ngoại lệ phù hợp để tránh crash node

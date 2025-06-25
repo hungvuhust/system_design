@@ -2,18 +2,18 @@
 
 ## What is the Observer Pattern?
 
-The Observer pattern is a behavioral design pattern that defines a one-to-many dependency between objects. When one object (the subject) changes its state, all its dependents (the observers) are notified and updated automatically.
+Observer Pattern là một mẫu thiết kế hành vi cho phép bạn định nghĩa cơ chế đăng ký (subscription) để thông báo cho nhiều đối tượng về bất kỳ sự kiện nào xảy ra với đối tượng mà họ đang quan sát. Khi một đối tượng (subject) thay đổi trạng thái, tất cả các observer sẽ được thông báo và cập nhật tự động.
 
 ## Use Case in Robotics
 
-The Observer pattern is fundamental to the architecture of ROS2 itself. The publish-subscribe mechanism is a direct implementation of the Observer pattern. A ROS2 node (the subject) publishes messages on a topic, and any number of other nodes (the observers) can subscribe to that topic to receive the messages.
+Observer Pattern là nền tảng của kiến trúc ROS2. Cơ chế publish-subscribe chính là một triển khai trực tiếp của Observer Pattern. Một node ROS2 (subject) publish message lên topic, và nhiều node khác (observer) subscribe để nhận message đó.
 
-For example:
-*   A camera driver node (subject) publishes `sensor_msgs/Image` messages.
-*   An image processing node (observer) subscribes to the image topic to perform object detection.
-*   A user interface node (observer) subscribes to the same topic to display the video feed.
+Ví dụ:
+*   Node camera (subject) publish `sensor_msgs/Image`.
+*   Node xử lý ảnh (observer) subscribe để nhận ảnh và xử lý.
+*   Node giao diện người dùng (observer) subscribe để hiển thị video.
 
-When the camera publishes a new image, both the processing node and the UI node are notified and can react accordingly.
+Khi camera publish ảnh mới, cả node xử lý ảnh và node UI đều được thông báo và có thể phản ứng ngay.
 
 ## C++ Example
 
@@ -72,26 +72,26 @@ public:
     Dashboard(const std::string& name) : robotName(name) {}
 
     void update(const std::string& message) override {
-        // Display the new state on the dashboard
+        // Hiển thị trạng thái mới lên dashboard
     }
 };
 ```
 
 ## Best Practices
 
-*   **Use ROS2 Pub/Sub:** For inter-node communication in ROS2, always prefer the built-in publish-subscribe mechanism over implementing your own Observer pattern.
-*   **Intra-Node Observer:** The classic Observer pattern can still be useful for intra-node communication, i.e., for communication between different objects within the same ROS2 node.
-*   **Decoupling:** The pattern decouples the subject from its observers. The subject doesn't need to know about the concrete classes of the observers.
+*   **Sử dụng ROS2 Pub/Sub:** Đối với giao tiếp giữa các node, luôn ưu tiên cơ chế publish-subscribe sẵn có của ROS2.
+*   **Observer nội bộ:** Observer Pattern vẫn hữu ích cho giao tiếp giữa các đối tượng trong cùng một node.
+*   **Tách biệt:** Subject không cần biết về class cụ thể của observer.
 
 ## Extensions and Variations
 
-*   **Pull vs. Push:** The example shows a "push" model, where the subject sends the changed data to the observers. In a "pull" model, the subject only sends a notification, and the observers have to query the subject for the data.
-*   **Event Libraries:** Libraries like `boost::signals2` provide a powerful and flexible implementation of the Observer pattern.
+*   **Push vs. Pull:** Ví dụ trên là mô hình "push" (subject gửi dữ liệu mới cho observer). Có thể dùng mô hình "pull" (subject chỉ gửi thông báo, observer tự lấy dữ liệu).
+*   **Thư viện sự kiện:** Có thể dùng các thư viện như `boost::signals2` để triển khai Observer Pattern linh hoạt hơn.
 
 ## Testing
 
-*   **Mocking:** Use mock observers to test the subject and ensure it notifies them correctly.
-*   **State Verification:** Test the observers to ensure they update their state correctly when they receive a notification.
+*   **Mocking:** Sử dụng mock observer để test subject.
+*   **Kiểm tra trạng thái:** Test observer để đảm bảo cập nhật đúng khi nhận thông báo.
 
 ## OBSERVER PATTERN TRONG ROS2
 
@@ -613,26 +613,4 @@ TEST(TemperatureSystemTest, FullSystemTest) {
 ```
 
 #### 10. Kết luận
-Observer Pattern là một mẫu thiết kế quan trọng trong ROS2 và robotics, đặc biệt trong các hệ thống theo dõi và phản ứng thời gian thực. Pattern này mang lại nhiều lợi ích thiết thực:
-
-1. **Tính linh hoạt cao**:
-   - Dễ dàng thêm/xóa các observers mới mà không ảnh hưởng đến code hiện có
-   - Có thể tái sử dụng observers cho nhiều subjects khác nhau
-   - Hỗ trợ tốt việc mở rộng hệ thống
-
-2. **Phù hợp với robotics**:
-   - Xử lý tốt các tình huống real-time monitoring
-   - Tích hợp tự nhiên với hệ thống publish/subscribe của ROS2
-   - Đáp ứng nhanh với các thay đổi trạng thái của robot
-
-3. **Dễ bảo trì và test**:
-   - Code được tổ chức rõ ràng, dễ hiểu
-   - Có thể test riêng từng observer
-   - Dễ dàng debug và xử lý lỗi
-
-4. **Hiệu quả trong thực tế**:
-   - Giảm thiểu việc polling không cần thiết
-   - Tối ưu hóa tài nguyên hệ thống
-   - Xử lý đồng thời nhiều observers một cách hiệu quả
-
-Trong ví dụ về hệ thống giám sát nhiệt độ, chúng ta đã thấy Observer Pattern giúp xây dựng một hệ thống mạnh mẽ, có khả năng mở rộng và dễ bảo trì. Pattern này là lựa chọn tốt cho các hệ thống robotics cần theo dõi và phản ứng với các thay đổi trạng thái một cách real-time.
+Observer Pattern là một mẫu thiết kế quan trọng trong ROS2 và robotics, đặc biệt trong các hệ thống theo dõi và phản ứng thời gian thực. Pattern này giúp xây dựng hệ thống linh hoạt, dễ mở rộng, dễ bảo trì và tối ưu cho các ứng dụng real-time monitoring.

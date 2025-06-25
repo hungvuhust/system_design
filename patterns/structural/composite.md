@@ -2,257 +2,284 @@
 
 ## 1. Giới thiệu
 
-Composite Pattern là một mẫu thiết kế cấu trúc (Structural Design Pattern) cho phép bạn kết hợp các đối tượng thành các cấu trúc cây để biểu diễn các hệ thống phân cấp một phần-toàn bộ (part-whole hierarchies). Composite cho phép client xử lý các đối tượng riêng lẻ và các thành phần của đối tượng một cách thống nhất.
+Composite Pattern là một mẫu thiết kế thuộc nhóm Structural Pattern, cho phép tổ chức các đối tượng thành cấu trúc cây phân cấp. Pattern này đối xử với từng đối tượng riêng lẻ và nhóm các đối tượng theo cùng một cách.
 
-Trong ROS2 và robotics, Composite Pattern rất hữu ích để quản lý các cấu trúc phức tạp như một robot được tạo thành từ nhiều bộ phận, mỗi bộ phận lại có thể có các bộ phận con. Ví dụ, một cánh tay robot có thể được coi là một "composite" bao gồm các khớp (joints), và các thanh nối (links), trong khi mỗi khớp lại là một đối tượng riêng lẻ.
+Trong ROS2 và robotics, Composite Pattern thường được sử dụng để:
+- Xây dựng hệ thống điều khiển phân cấp cho robot
+- Quản lý các task và subtask trong mission planning
+- Tổ chức các sensor và actuator trong robot
+- Xây dựng behavior trees cho robot navigation
 
-**Ví dụ:**
-- Một robot di động (mobile robot) là một composite của hệ thống truyền động (drive system), hệ thống cảm biến (sensor system), và hệ thống tính toán (computation system).
-- Hệ thống cảm biến lại là một composite của nhiều cảm biến riêng lẻ như LiDAR, camera, IMU.
+## 2. Vấn đề
 
-## 2. Cấu trúc
+Trong robotics, chúng ta thường gặp các tình huống cần quản lý nhiều thành phần có quan hệ phân cấp, ví dụ:
+- Một mission có nhiều task, mỗi task có nhiều subtask
+- Một robot có nhiều joint, mỗi joint có nhiều motor và sensor
+- Một navigation system có nhiều behavior, mỗi behavior có nhiều action
 
-Composite Pattern bao gồm các thành phần sau:
+Việc quản lý riêng lẻ từng thành phần sẽ dẫn đến:
+- Code phức tạp và khó bảo trì
+- Khó mở rộng và thêm tính năng mới
+- Khó tái sử dụng code
 
-- **Component:**
-  - Là một interface hoặc abstract class cho tất cả các đối tượng trong composition.
-  - Khai báo các phương thức chung cho cả `Leaf` (đối tượng riêng lẻ) và `Composite` (đối tượng chứa các đối tượng khác).
-  - Ví dụ: `RobotComponent` với các phương thức như `initialize()`, `shutdown()`, `get_status()`.
+## 3. Giải pháp
 
-- **Leaf:**
-  - Là các đối tượng riêng lẻ trong composition, không có con.
-  - Implement các phương thức của `Component`.
-  - Ví dụ: `LidarSensor`, `CameraSensor`, `MotorController`.
+Composite Pattern giải quyết vấn đề bằng cách:
+1. Tạo interface chung cho tất cả thành phần
+2. Tổ chức thành phần theo cấu trúc cây
+3. Xử lý thống nhất giữa leaf nodes và composite nodes
 
-- **Composite:**
-  - Là đối tượng chứa các `Component` con (có thể là `Leaf` hoặc `Composite` khác).
-  - Implement các phương thức của `Component`, thường bằng cách ủy thác (delegate) cho các con của nó.
-  - Cung cấp các phương thức để quản lý các con, như `add()`, `remove()`, `get_child()`.
-  - Ví dụ: `SensorSystem` (chứa các `LidarSensor`, `CameraSensor`), `RobotPlatform` (chứa `SensorSystem`, `DriveSystem`).
-
-- **Client:**
-  - Tương tác với các đối tượng trong composition thông qua interface `Component`.
-  - Client không cần phân biệt giữa `Leaf` và `Composite`, giúp đơn giản hóa code.
-
-## 3. Ví dụ trong C++ (ROS2)
-
-Hãy xem xét một ví dụ về việc mô hình hóa một robot di động tự hành (AMR - Autonomous Mobile Robot) sử dụng Composite Pattern trong C++.
-
-### 3.1. Component Interface (`robot_component.hpp`)
+## 4. Ví dụ thực tế: Robot Task Management
 
 ```cpp
-#pragma once
-
-class RobotComponent {
-protected:
-    std::string name_;
-    RobotComponent* parent_ = nullptr;
-
+// Component interface
+class RobotTask {
 public:
-    RobotComponent(const std::string& name) : name_(name) {}
-    virtual ~RobotComponent() = default;
-
-    void set_parent(RobotComponent* parent) {
-        parent_ = parent;
+    virtual ~RobotTask() = default;
+    virtual void execute() = 0;
+    virtual void pause() = 0;
+    virtual void resume() = 0;
+    virtual bool isDone() const = 0;
+    virtual void addSubtask(std::shared_ptr<RobotTask> task) {
+        throw std::runtime_error("Cannot add subtask to leaf task");
     }
-
-    RobotComponent* get_parent() const {
-        return parent_;
-    }
-
-    virtual void add(std::unique_ptr<RobotComponent> component) {}
-    virtual void remove(RobotComponent* component) {}
-    virtual bool is_composite() const { return false; }
-
-    virtual void initialize() = 0;
-    virtual void shutdown() = 0;
-    virtual std::string get_status() = 0;
-    
-    std::string get_name() const { return name_; }
-};
-```
-
-### 3.2. Leaf Components (`leaf_components.hpp`)
-
-```cpp
-#pragma once
-
-// Leaf: LidarSensor
-class LidarSensor : public RobotComponent {
-public:
-    using RobotComponent::RobotComponent; // Inherit constructor
-
-    void initialize() override {
-        std::cout << "Initializing LiDAR sensor: " << name_ << std::endl;
-    }
-
-    void shutdown() override {
-        std::cout << "Shutting down LiDAR sensor: " << name_ << std::endl;
-    }
-
-    std::string get_status() override {
-        return "LiDAR " + name_ + ": OK";
+    virtual void removeSubtask(std::shared_ptr<RobotTask> task) {
+        throw std::runtime_error("Cannot remove subtask from leaf task");
     }
 };
 
-// Leaf: CameraSensor
-class CameraSensor : public RobotComponent {
+// Leaf task: Move to position
+class MoveToPositionTask : public RobotTask {
 public:
-    using RobotComponent::RobotComponent;
+    MoveToPositionTask(const geometry_msgs::msg::Pose& target)
+        : target_pose_(target), is_done_(false) {}
 
-    void initialize() override {
-        std::cout << "Initializing Camera sensor: " << name_ << std::endl;
+    void execute() override {
+        RCLCPP_INFO(logger_, "Moving to position: x=%.2f, y=%.2f",
+                   target_pose_.position.x, target_pose_.position.y);
+        // Implement movement logic
+        is_done_ = true;
     }
 
-    void shutdown() override {
-        std::cout << "Shutting down Camera sensor: " << name_ << std::endl;
+    void pause() override {
+        RCLCPP_INFO(logger_, "Pausing movement");
+        // Implement pause logic
     }
 
-    std::string get_status() override {
-        return "Camera " + name_ + ": OK";
+    void resume() override {
+        RCLCPP_INFO(logger_, "Resuming movement");
+        // Implement resume logic
     }
+
+    bool isDone() const override {
+        return is_done_;
+    }
+
+private:
+    geometry_msgs::msg::Pose target_pose_;
+    bool is_done_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("MoveToPositionTask");
 };
 
-// Leaf: MotorController
-class MotorController : public RobotComponent {
+// Leaf task: Grab object
+class GrabObjectTask : public RobotTask {
 public:
-    using RobotComponent::RobotComponent;
+    GrabObjectTask(const std::string& object_id)
+        : object_id_(object_id), is_done_(false) {}
 
-    void initialize() override {
-        std::cout << "Initializing Motor Controller: " << name_ << std::endl;
+    void execute() override {
+        RCLCPP_INFO(logger_, "Grabbing object: %s", object_id_.c_str());
+        // Implement grabbing logic
+        is_done_ = true;
     }
 
-    void shutdown() override {
-        std::cout << "Shutting down Motor Controller: " << name_ << std::endl;
+    void pause() override {
+        RCLCPP_INFO(logger_, "Pausing grab operation");
+        // Implement pause logic
     }
 
-    std::string get_status() override {
-        return "Motor Controller " + name_ + ": Running";
+    void resume() override {
+        RCLCPP_INFO(logger_, "Resuming grab operation");
+        // Implement resume logic
     }
+
+    bool isDone() const override {
+        return is_done_;
+    }
+
+private:
+    std::string object_id_;
+    bool is_done_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("GrabObjectTask");
 };
-```
 
-### 3.3. Composite Component (`composite_component.hpp`)
-
-```cpp
-#pragma once
-
-class Composite : public RobotComponent {
-protected:
-    std::vector<std::unique_ptr<RobotComponent>> children_;
-
+// Composite: Task sequence
+class TaskSequence : public RobotTask {
 public:
-    using RobotComponent::RobotComponent;
-
-    void add(std::unique_ptr<RobotComponent> component) override {
-        component->set_parent(this);
-        children_.push_back(std::move(component));
-    }
-
-    void remove(RobotComponent* component) override {
-        children_.erase(
-            std::remove_if(children_.begin(), children_.end(), 
-                [&](const std::unique_ptr<RobotComponent>& p) {
-                    return p.get() == component;
-                }),
-            children_.end()
-        );
-    }
-
-    bool is_composite() const override {
-        return true;
-    }
-
-    void initialize() override {
-        std::cout << "Initializing composite component: " << name_ << std::endl;
-        for (const auto& child : children_) {
-            child->initialize();
-        }
-    }
-
-    void shutdown() override {
-        std::cout << "Shutting down composite component: " << name_ << std::endl;
-        for (const auto& child : children_) {
-            child->shutdown();
-        }
-    }
-
-    std::string get_status() override {
-        std::string result = "Composite " + name_ + ": [";
-        for (size_t i = 0; i < children_.size(); ++i) {
-            result += children_[i]->get_status();
-            if (i < children_.size() - 1) {
-                result += ", ";
+    void execute() override {
+        RCLCPP_INFO(logger_, "Executing task sequence");
+        for (auto& task : subtasks_) {
+            if (!task->isDone()) {
+                task->execute();
             }
         }
-        result += "]";
-        return result;
+    }
+
+    void pause() override {
+        RCLCPP_INFO(logger_, "Pausing task sequence");
+        for (auto& task : subtasks_) {
+            task->pause();
+        }
+    }
+
+    void resume() override {
+        RCLCPP_INFO(logger_, "Resuming task sequence");
+        for (auto& task : subtasks_) {
+            if (!task->isDone()) {
+                task->resume();
+            }
+        }
+    }
+
+    bool isDone() const override {
+        return std::all_of(subtasks_.begin(), subtasks_.end(),
+                          [](const auto& task) { return task->isDone(); });
+    }
+
+    void addSubtask(std::shared_ptr<RobotTask> task) override {
+        subtasks_.push_back(task);
+    }
+
+    void removeSubtask(std::shared_ptr<RobotTask> task) override {
+        subtasks_.erase(
+            std::remove(subtasks_.begin(), subtasks_.end(), task),
+            subtasks_.end());
+    }
+
+private:
+    std::vector<std::shared_ptr<RobotTask>> subtasks_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("TaskSequence");
+};
+```
+
+## 5. Sử dụng trong ROS2
+
+Ví dụ về cách sử dụng Composite Pattern trong một ROS2 node:
+
+```cpp
+class RobotTaskExecutor : public rclcpp::Node {
+public:
+    RobotTaskExecutor() : Node("robot_task_executor") {
+        // Khởi tạo task sequence
+        auto pick_and_place = std::make_shared<TaskSequence>();
+
+        // Tạo subtasks
+        auto move_to_object = std::make_shared<MoveToPositionTask>(
+            createPose(1.0, 1.0, 0.0));
+        auto grab_object = std::make_shared<GrabObjectTask>("box_1");
+        auto move_to_target = std::make_shared<MoveToPositionTask>(
+            createPose(2.0, 2.0, 0.0));
+
+        // Thêm subtasks vào sequence
+        pick_and_place->addSubtask(move_to_object);
+        pick_and_place->addSubtask(grab_object);
+        pick_and_place->addSubtask(move_to_target);
+
+        // Thực thi task sequence
+        pick_and_place->execute();
+    }
+
+private:
+    geometry_msgs::msg::Pose createPose(double x, double y, double z) {
+        geometry_msgs::msg::Pose pose;
+        pose.position.x = x;
+        pose.position.y = y;
+        pose.position.z = z;
+        return pose;
     }
 };
 ```
 
-### 3.4. Client Code (`main.cpp`)
+## 6. Ứng dụng trong Behavior Trees
+
+Composite Pattern là nền tảng của Behavior Trees, một công cụ phổ biến trong robot navigation:
 
 ```cpp
-int main() {
-    // 1. Build the robot's component tree
-    auto robot = std::make_unique<Composite>("MyAMR");
+// Component interface
+class BehaviorNode {
+public:
+    virtual ~BehaviorNode() = default;
+    virtual BehaviorStatus tick() = 0;
+    virtual void reset() = 0;
+};
 
-    // Sensor System
-    auto sensor_system = std::make_unique<Composite>("SensorSystem");
-    sensor_system->add(std::make_unique<LidarSensor>("Lidar_Front"));
-    sensor_system->add(std::make_unique<CameraSensor>("Camera_Stereo"));
+// Leaf node: Action
+class MoveAction : public BehaviorNode {
+public:
+    BehaviorStatus tick() override {
+        // Implement movement logic
+        return BehaviorStatus::SUCCESS;
+    }
 
-    // Drive System
-    auto drive_system = std::make_unique<Composite>("DriveSystem");
-    drive_system->add(std::make_unique<MotorController>("Motor_Left"));
-    drive_system->add(std::make_unique<MotorController>("Motor_Right"));
+    void reset() override {
+        // Reset internal state
+    }
+};
 
-    // Add subsystems to the robot
-    robot->add(std::move(sensor_system));
-    robot->add(std::move(drive_system));
+// Composite node: Sequence
+class SequenceNode : public BehaviorNode {
+public:
+    BehaviorStatus tick() override {
+        for (auto& child : children_) {
+            auto status = child->tick();
+            if (status != BehaviorStatus::SUCCESS) {
+                return status;
+            }
+        }
+        return BehaviorStatus::SUCCESS;
+    }
 
-    // 2. Interact with the robot
-    std::cout << "--- Initializing Robot ---" << std::endl;
-    robot->initialize();
+    void reset() override {
+        for (auto& child : children_) {
+            child->reset();
+        }
+    }
 
-    std::cout << "\n--- Getting Robot Status ---" << std::endl;
-    std::cout << robot->get_status() << std::endl;
+    void addChild(std::shared_ptr<BehaviorNode> child) {
+        children_.push_back(child);
+    }
 
-    std::cout << "\n--- Shutting Down Robot ---" << std::endl;
-    robot->shutdown();
-
-    return 0;
-}
+private:
+    std::vector<std::shared_ptr<BehaviorNode>> children_;
+};
 ```
 
-## 4. Best Practices
+## 7. Lợi ích
 
-- **Interface Segregation:** Giữ cho `Component` interface ở mức tối thiểu. Các phương thức quản lý con (`add`, `remove`) có thể được đặt trong `Composite` class thay vì `Component` interface để tránh làm "ô nhiễm" `Leaf` class (Leaf không cần các phương thức này). Tuy nhiên, việc đặt chúng trong `Component` giúp client code đơn giản hơn (không cần kiểm tra kiểu).
-- **Parent Pointers:** Cung cấp một con trỏ (pointer) từ `Component` đến `Composite` cha của nó. Điều này hữu ích cho việc duyệt cây hoặc thực hiện các hành động yêu cầu ngữ cảnh của cha.
-- **ROS2 Integration:**
-  - Mỗi `Composite` hoặc `Leaf` có thể là một ROS2 Node hoặc quản lý một tập các Node.
-  - Sử dụng ROS2 parameters để cấu hình các `Component` (ví dụ: tên topic, tần số publish).
-  - Sử dụng ROS2 services hoặc actions để kích hoạt các hành động trên `Component` (ví dụ: `start_scan` cho LiDAR).
-- **Lifecycle Management:** Tích hợp với ROS2 Lifecycle Nodes. Các phương thức `initialize()` và `shutdown()` có thể được ánh xạ tới các transition `on_configure`, `on_activate`, `on_deactivate`, `on_cleanup` của Lifecycle Node.
+1. **Tính linh hoạt**: Dễ dàng thêm/xóa/thay đổi các thành phần
+2. **Code sạch**: Interface thống nhất cho mọi thành phần
+3. **Tái sử dụng**: Có thể tái sử dụng các thành phần trong nhiều context
+4. **Mở rộng**: Dễ dàng thêm loại task/behavior mới
 
-## 5. Mở rộng
+## 8. Khi nào sử dụng
 
-- **Shared Leafs:** Để tiết kiệm bộ nhớ, các `Leaf` có thể được chia sẻ giữa nhiều `Composite` nếu chúng không có trạng thái riêng.
-- **Ordering:** Trong một số trường hợp, thứ tự của các con trong `Composite` là quan trọng. `Composite` class nên sử dụng một cấu trúc dữ liệu có thứ tự (như list) để lưu trữ các con.
+- Khi cần tổ chức dữ liệu theo cấu trúc cây
+- Khi muốn client xử lý đồng nhất các đối tượng đơn và nhóm
+- Khi cần xây dựng hệ thống task/behavior phức tạp
+- Khi cần quản lý các thành phần có quan hệ cha-con
 
-## 6. Testing
+## 9. Lưu ý
 
-- **Unit Test:**
-  - Test các `Leaf` một cách độc lập.
-  - Test các `Composite` bằng cách sử dụng các mock `Component` để kiểm tra xem nó có ủy thác các cuộc gọi một cách chính xác hay không.
-- **Integration Test:**
-  - Xây dựng một cây `Composite` đơn giản và kiểm tra xem toàn bộ hệ thống có hoạt động như mong đợi không.
-  - Test trong môi trường ROS2 để đảm bảo giao tiếp giữa các node là chính xác.
+1. Không nên sử dụng Composite Pattern khi:
+   - Cấu trúc dữ liệu đơn giản, không có quan hệ phân cấp
+   - Không cần xử lý đồng nhất giữa đối tượng đơn và nhóm
 
-## 7. Use Cases trong Robotics
+2. Cần chú ý:
+   - Xử lý lỗi khi thao tác với leaf nodes
+   - Quản lý memory khi sử dụng con trỏ
+   - Đảm bảo thread safety trong môi trường đa luồng
 
-- **Robot Arm:** Một cánh tay robot là một `Composite` của các `Joint` và `Link`. Mỗi `Joint` có thể là một `Composite` khác nếu nó phức tạp (ví dụ: khớp 2 bậc tự do).
-- **Simulation Models (URDF/SDF):** Cấu trúc của một robot trong file URDF hoặc SDF có thể được biểu diễn bằng Composite Pattern. `<robot>` là `Composite` gốc, `<link>` và `<joint>` là các `Component`.
-- **Task Planning:** Một nhiệm vụ phức tạp (ví dụ: "lấy và đặt") có thể được chia thành các nhiệm vụ con (`Composite`). Các nhiệm vụ nguyên thủy (ví dụ: "di chuyển đến vị trí", "đóng kẹp") là các `Leaf`.
-- **Software Architecture:** Cấu trúc của một hệ thống phần mềm robot có thể được tổ chức bằng Composite. Ví dụ, một `NavigationSystem` là một `Composite` của `PathPlanner`, `LocalPlanner`, và `RecoveryBehavior`.
+3. Trong ROS2:
+   - Kết hợp với các pattern khác như Observer để theo dõi trạng thái
+   - Sử dụng smart pointers để quản lý memory
+   - Tận dụng ROS2 logging system để debug

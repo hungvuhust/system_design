@@ -1,95 +1,234 @@
-# Flyweight Pattern in ROS2
+# Flyweight Pattern trong ROS2 và Robotics
 
-## What is the Flyweight Pattern?
+## 1. Giới thiệu
 
-The Flyweight pattern is a structural design pattern that minimizes memory usage by sharing as much data as possible with other similar objects. It is useful when you need to create a large number of objects that have some shared state. The pattern separates the intrinsic (shared) state from the extrinsic (unique) state.
+Flyweight Pattern là một mẫu thiết kế thuộc nhóm Structural Pattern, giúp giảm thiểu việc sử dụng bộ nhớ bằng cách chia sẻ các trạng thái chung giữa nhiều đối tượng thay vì lưu trữ chúng trong từng đối tượng.
 
-## Use Case in Robotics
+Trong ROS2 và robotics, Flyweight Pattern thường được sử dụng để:
+- Quản lý dữ liệu cảm biến từ nhiều robot
+- Chia sẻ các tham số cấu hình chung
+- Tối ưu hóa bộ nhớ trong point cloud processing
+- Quản lý các shared resources trong multi-robot system
 
-In a robotics application, you might have a large number of identical sensors or actuators. For example, a robot might have a grid of proximity sensors. Each sensor has some common properties (model, range, field of view) and some unique properties (ID, position on the robot). The Flyweight pattern can be used to share the common properties among all sensor objects, reducing memory consumption.
+## 2. Vấn đề
 
-## C++ Example
+Trong robotics, chúng ta thường gặp các tình huống cần tạo nhiều đối tượng có các thuộc tính giống nhau, ví dụ:
+- Nhiều robot cùng loại trong swarm robotics
+- Các điểm trong point cloud với cùng thuộc tính
+- Các particle trong particle filter
+- Các node trong occupancy grid map
 
-Here is a C++ example of the Flyweight pattern for representing robot sensors.
+Việc lưu trữ riêng các thuộc tính chung này sẽ dẫn đến:
+- Sử dụng bộ nhớ không hiệu quả
+- Tăng thời gian xử lý
+- Giảm hiệu suất hệ thống
+
+## 3. Giải pháp
+
+Flyweight Pattern giải quyết vấn đề bằng cách:
+1. Tách các thuộc tính thành intrinsic (shared) và extrinsic (unique)
+2. Tạo factory để quản lý và chia sẻ các flyweight objects
+3. Sử dụng caching để tái sử dụng các đối tượng
+
+## 4. Ví dụ thực tế: Point Cloud Processing
 
 ```cpp
-// Flyweight interface
-class SensorFlyweight {
+// Intrinsic state - shared properties
+class PointProperties {
 public:
-    virtual ~SensorFlyweight() {}
-    virtual void display(int sensorID, double position) const = 0;
+    PointProperties(uint8_t r, uint8_t g, uint8_t b, std::string semantic_label)
+        : color_r_(r), color_g_(g), color_b_(b)
+        , semantic_label_(semantic_label) {}
+
+    // Getters
+    uint8_t getR() const { return color_r_; }
+    uint8_t getG() const { return color_g_; }
+    uint8_t getB() const { return color_b_; }
+    const std::string& getLabel() const { return semantic_label_; }
+
+private:
+    uint8_t color_r_, color_g_, color_b_;
+    std::string semantic_label_;
 };
 
-// Concrete Flyweight
-class ProximitySensor : public SensorFlyweight {
-private:
-    std::string model;
-    double range;
-    double fov;
-
+// Flyweight factory
+class PointPropertiesFactory {
 public:
-    ProximitySensor(const std::string& model, double range, double fov)
-        : model(model), range(range), fov(fov) {}
+    std::shared_ptr<PointProperties> getPointProperties(
+        uint8_t r, uint8_t g, uint8_t b, const std::string& label) {
+        
+        // Create key for properties
+        std::string key = std::to_string(r) + "_" + 
+                         std::to_string(g) + "_" + 
+                         std::to_string(b) + "_" + 
+                         label;
 
-    void display(int sensorID, double position) const override {
-        // Display sensor information
-    }
-};
-
-// Flyweight Factory
-class SensorFlyweightFactory {
-private:
-    std::map<std::string, SensorFlyweight*> flyweights;
-
-public:
-    ~SensorFlyweightFactory() {
-        for (auto pair : flyweights) {
-            delete pair.second;
+        // Check if properties already exist
+        auto it = properties_.find(key);
+        if (it != properties_.end()) {
+            return it->second;
         }
-        flyweights.clear();
+
+        // Create new properties if not found
+        auto props = std::make_shared<PointProperties>(r, g, b, label);
+        properties_[key] = props;
+        return props;
     }
 
-    SensorFlyweight* getFlyweight(const std::string& key, const std::string& model, double range, double fov) {
-        if (flyweights.find(key) == flyweights.end()) {
-            flyweights[key] = new ProximitySensor(model, range, fov);
-        }
-        return flyweights[key];
+    size_t getCacheSize() const {
+        return properties_.size();
     }
 
-    void listFlyweights() const {
-        // List all flyweights
-    }
+private:
+    std::unordered_map<std::string, std::shared_ptr<PointProperties>> properties_;
 };
 
-// Context
-class Sensor {
-private:
-    int id;
-    double position;
-    const SensorFlyweight* flyweight;
-
+// Point class with extrinsic state
+class Point {
 public:
-    Sensor(int id, double position, const SensorFlyweight* flyweight)
-        : id(id), position(position), flyweight(flyweight) {}
+    Point(double x, double y, double z,
+          std::shared_ptr<PointProperties> properties)
+        : x_(x), y_(y), z_(z)
+        , properties_(properties) {}
 
-    void display() const {
-        flyweight->display(id, position);
+    // Getters
+    double getX() const { return x_; }
+    double getY() const { return y_; }
+    double getZ() const { return z_; }
+    const PointProperties& getProperties() const { return *properties_; }
+
+private:
+    // Extrinsic state - unique for each point
+    double x_, y_, z_;
+    // Intrinsic state - shared between points
+    std::shared_ptr<PointProperties> properties_;
+};
+
+// Point cloud using flyweight pattern
+class OptimizedPointCloud {
+public:
+    OptimizedPointCloud() : factory_(std::make_unique<PointPropertiesFactory>()) {}
+
+    void addPoint(double x, double y, double z,
+                 uint8_t r, uint8_t g, uint8_t b,
+                 const std::string& label) {
+        auto props = factory_->getPointProperties(r, g, b, label);
+        points_.emplace_back(x, y, z, props);
     }
+
+    size_t getNumPoints() const {
+        return points_.size();
+    }
+
+    size_t getNumUniqueProperties() const {
+        return factory_->getCacheSize();
+    }
+
+    void processPoints() {
+        for (const auto& point : points_) {
+            RCLCPP_DEBUG(logger_, "Processing point (%.2f, %.2f, %.2f) with label %s",
+                        point.getX(), point.getY(), point.getZ(),
+                        point.getProperties().getLabel().c_str());
+            // Process point...
+        }
+    }
+
+private:
+    std::vector<Point> points_;
+    std::unique_ptr<PointPropertiesFactory> factory_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("OptimizedPointCloud");
 };
 ```
 
-## Best Practices
+## 5. Sử dụng trong ROS2
 
-*   **Immutability:** The intrinsic state in the flyweight object should be immutable.
-*   **Factory:** Use a factory to manage the creation and sharing of flyweight objects.
-*   **Garbage Collection:** Be mindful of the lifecycle of flyweight objects, especially in C++ where you need to manage memory manually.
+Ví dụ về cách sử dụng Flyweight Pattern trong một ROS2 node xử lý point cloud:
 
-## Extensions and Variations
+```cpp
+class PointCloudProcessorNode : public rclcpp::Node {
+public:
+    PointCloudProcessorNode() : Node("point_cloud_processor") {
+        // Khởi tạo point cloud
+        point_cloud_ = std::make_unique<OptimizedPointCloud>();
 
-*   **Shared vs. Unshared Flyweights:** You can have a mix of shared and unshared flyweight objects.
-*   **Stateful Flyweights:** While the intrinsic state is typically immutable, you can have flyweights with state that can be modified, but this should be done with care.
+        // Subscribe to point cloud topic
+        point_cloud_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
+            "input_cloud", 10,
+            std::bind(&PointCloudProcessorNode::pointCloudCallback, this, std::placeholders::_1));
 
-## Testing
+        // Timer để in thống kê
+        stats_timer_ = create_wall_timer(
+            std::chrono::seconds(5),
+            std::bind(&PointCloudProcessorNode::publishStats, this));
+    }
 
-*   **Unit Testing:** Test the flyweight factory to ensure that it correctly creates and shares flyweights.
-*   **Integration Testing:** Test the interaction between the context objects and the flyweight objects.
+private:
+    void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+        // Convert ROS message to PCL point cloud
+        pcl::PointCloud<pcl::PointXYZRGB> pcl_cloud;
+        pcl::fromROSMsg(*msg, pcl_cloud);
+
+        // Process points using flyweight pattern
+        for (const auto& pcl_point : pcl_cloud) {
+            point_cloud_->addPoint(
+                pcl_point.x, pcl_point.y, pcl_point.z,
+                pcl_point.r, pcl_point.g, pcl_point.b,
+                determineLabel(pcl_point));
+        }
+
+        // Process the optimized point cloud
+        point_cloud_->processPoints();
+    }
+
+    void publishStats() {
+        RCLCPP_INFO(get_logger(),
+            "Point cloud stats:\n"
+            "  Total points: %zu\n"
+            "  Unique properties: %zu",
+            point_cloud_->getNumPoints(),
+            point_cloud_->getNumUniqueProperties());
+    }
+
+    std::string determineLabel(const pcl::PointXYZRGB& point) {
+        // Simplified label determination based on height
+        if (point.z > 1.5) return "high";
+        if (point.z > 0.5) return "medium";
+        return "low";
+    }
+
+    std::unique_ptr<OptimizedPointCloud> point_cloud_;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_sub_;
+    rclcpp::TimerBase::SharedPtr stats_timer_;
+};
+```
+
+## 6. Lợi ích
+
+1. **Tiết kiệm bộ nhớ**: Giảm dung lượng bộ nhớ bằng cách chia sẻ dữ liệu
+2. **Hiệu suất**: Giảm thời gian tạo đối tượng và truy cập dữ liệu
+3. **Quản lý tốt hơn**: Tập trung quản lý các thuộc tính chung
+4. **Scalability**: Dễ dàng mở rộng với số lượng lớn đối tượng
+
+## 7. Khi nào sử dụng
+
+- Khi ứng dụng cần tạo số lượng lớn đối tượng
+- Khi nhiều đối tượng chia sẻ thuộc tính giống nhau
+- Khi cần tối ưu hóa việc sử dụng bộ nhớ
+- Khi các thuộc tính chung ít thay đổi
+
+## 8. Lưu ý
+
+1. Thiết kế Flyweight:
+   - Phân biệt rõ intrinsic và extrinsic state
+   - Đảm bảo flyweight objects là immutable
+   - Cẩn thận với thread safety trong factory
+
+2. Quản lý bộ nhớ:
+   - Cân nhắc kích thước cache trong factory
+   - Xử lý việc giải phóng bộ nhớ khi không cần thiết
+   - Theo dõi memory usage
+
+3. Trong ROS2:
+   - Sử dụng shared_ptr để quản lý flyweight objects
+   - Cẩn thận với real-time constraints
+   - Xem xét trade-off giữa memory và CPU usage 

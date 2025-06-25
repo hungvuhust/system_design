@@ -49,8 +49,17 @@ Các pattern liên quan đến object composition
 ### 🎯 [Behavioral Patterns](./patterns/behavioral/)
 Các pattern liên quan đến communication giữa objects
 
+- **[Chain of Responsibility](./patterns/behavioral/chain_of_responsibility.md)**: Xử lý requests theo chuỗi handlers
+- **[Command](./patterns/behavioral/command.md)**: Encapsulate requests dưới dạng objects
+- **[Interpreter](./patterns/behavioral/interpreter.md)**: Định nghĩa grammar cho ngôn ngữ
+- **[Iterator](./patterns/behavioral/iterator.md)**: Truy cập tuần tự các phần tử
+- **[Mediator](./patterns/behavioral/mediator.md)**: Định nghĩa giao tiếp giữa objects
+- **[Memento](./patterns/behavioral/memento.md)**: Lưu và khôi phục state
 - **[Observer](./patterns/behavioral/observer.md)**: Notification system cho state changes
+- **[State](./patterns/behavioral/state.md)**: Thay đổi behavior khi state thay đổi
 - **[Strategy](./patterns/behavioral/strategy.md)**: Encapsulate algorithms và make them interchangeable
+- **[Template Method](./patterns/behavioral/template_method.md)**: Định nghĩa skeleton của algorithm
+- **[Visitor](./patterns/behavioral/visitor.md)**: Thêm operations mới cho object structure
 
 ## ROS2 Specific Considerations
 

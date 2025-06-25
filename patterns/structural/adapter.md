@@ -1,476 +1,284 @@
-# ADAPTER PATTERN TRONG ROS2
+# Adapter Pattern trong ROS2 và Robotics
 
-#### 1. Giới thiệu đơn giản
-Tưởng tượng bạn có một robot đang sử dụng cảm biến laser để đo khoảng cách, nhưng bây giờ bạn muốn thêm một cảm biến siêu âm mới. Vấn đề là:
+## 1. Giới thiệu
 
-- Cảm biến laser trả về khoảng cách theo mét
-- Cảm biến siêu âm trả về khoảng cách theo inch
-- Code hiện tại của robot chỉ làm việc với đơn vị mét
+Adapter Pattern là một mẫu thiết kế thuộc nhóm Structural Pattern, cho phép các interface không tương thích có thể làm việc cùng nhau. Pattern này đặc biệt hữu ích trong robotics khi:
+- Tích hợp các sensors/actuators khác nhau
+- Chuyển đổi giữa các message types
+- Kết nối các hệ thống legacy
+- Tương thích với nhiều robot platforms
+- Chuyển đổi dữ liệu giữa các formats
 
-Adapter Pattern giống như một "bộ chuyển đổi" giúp cảm biến siêu âm có thể hoạt động với code hiện tại mà không cần thay đổi code của robot.
+## 2. Vấn đề
 
-#### 2. Định nghĩa chi tiết
-Adapter Pattern là một mẫu thiết kế cấu trúc cho phép các objects với interfaces không tương thích có thể làm việc cùng nhau. Pattern này hoạt động như một wrapper, chuyển đổi interface của một class thành interface khác mà client mong đợi.
+Trong robotics, chúng ta thường gặp các tình huống sau:
+- Cần sử dụng sensors từ nhiều nhà sản xuất khác nhau
+- Muốn tích hợp code cũ vào hệ thống ROS2 mới
+- Cần chuyển đổi giữa các coordinate frames
+- Muốn sử dụng lại code cho nhiều loại robot
+- Cần tương thích với nhiều protocols khác nhau
 
-#### Các thành phần chính:
-1. **Target Interface**:
-   - Interface mà client sử dụng
-   - Trong ROS2: Interface chuẩn cho sensors
+## 3. Giải pháp
 
-2. **Adaptee**:
-   - Class cần được adapt
-   - Trong ROS2: Sensor mới với interface khác
+Adapter Pattern giải quyết các vấn đề trên bằng cách:
+1. Định nghĩa interface mong muốn (target interface)
+2. Tạo adapter class implement target interface
+3. Adapter wrap adaptee (class cần được điều chỉnh)
+4. Chuyển đổi các calls giữa target và adaptee
 
-3. **Adapter**:
-   - Class thực hiện việc chuyển đổi
-   - Kết nối Target Interface với Adaptee
-
-#### 3. Ví dụ thực tế trong ROS2
-Giả sử chúng ta cần tích hợp một cảm biến siêu âm mới vào hệ thống robot hiện có:
+## 4. Ví dụ thực tế: Sensor Integration
 
 ```cpp
-// 1. Target Interface - Interface chuẩn cho cảm biến khoảng cách
-class DistanceSensorInterface {
+// Target interface - Chuẩn sensor interface cho hệ thống
+class IDistanceSensor {
 public:
-    virtual ~DistanceSensorInterface() = default;
-    
-    // Các phương thức chuẩn
-    virtual void initialize() = 0;
-    virtual double getDistanceInMeters() = 0;
-    virtual std::string getSensorType() const = 0;
-    virtual double getMaxRange() const = 0;
-    virtual double getMinRange() const = 0;
-    virtual double getFieldOfView() const = 0;  // radians
+    virtual ~IDistanceSensor() = default;
+    virtual double getDistanceMeters() = 0;
+    virtual bool isInRange() = 0;
+    virtual std::string getSensorInfo() = 0;
 };
 
-// 2. Existing Sensor - Cảm biến laser hiện có
-class LaserSensor : public DistanceSensorInterface {
+// Legacy sensor class (Adaptee) - giả sử đây là driver cũ
+class LegacyInfraredSensor {
 public:
-    void initialize() override {
-        RCLCPP_INFO(logger_, "Initializing Laser Sensor");
-        // Khởi tạo hardware
+    // Returns distance in inches
+    float getDistance() const {
+        // Simulate reading from sensor
+        return 39.37f;  // 1 meter in inches
     }
-    
-    double getDistanceInMeters() override {
-        // Đọc dữ liệu từ laser
-        return current_distance_;  // Đã ở đơn vị mét
+
+    // Returns raw voltage (0-5V)
+    float getRawVoltage() const {
+        return 2.5f;
     }
-    
-    std::string getSensorType() const override {
-        return "LASER";
+
+    // Returns true if voltage is in valid range
+    bool isValid() const {
+        float voltage = getRawVoltage();
+        return voltage >= 0.5f && voltage <= 4.5f;
     }
-    
-    double getMaxRange() const override {
-        return 30.0;  // 30 meters
+};
+
+// Modern sensor class (Another Adaptee)
+class ModernUltrasonicSensor {
+public:
+    // Returns distance in centimeters
+    double getMeasurement() const {
+        // Simulate reading from sensor
+        return 100.0;  // 1 meter in cm
     }
-    
-    double getMinRange() const override {
-        return 0.1;  // 10 cm
+
+    // Returns status code (0 = OK, 1 = Out of range, 2 = Error)
+    int getStatus() const {
+        return 0;
     }
-    
-    double getFieldOfView() const override {
-        return M_PI / 180.0 * 1.0;  // 1 degree
+
+    // Returns sensor model and firmware version
+    std::string getVersion() const {
+        return "Ultrasonic-V2 (Firmware: 1.2.3)";
+    }
+};
+
+// Adapter for Legacy Infrared Sensor
+class InfraredSensorAdapter : public IDistanceSensor {
+public:
+    explicit InfraredSensorAdapter(std::shared_ptr<LegacyInfraredSensor> sensor)
+        : sensor_(sensor) {
+        RCLCPP_INFO(logger_, "Initializing Infrared Sensor Adapter");
+    }
+
+    double getDistanceMeters() override {
+        // Convert inches to meters
+        return sensor_->getDistance() * 0.0254;
+    }
+
+    bool isInRange() override {
+        return sensor_->isValid();
+    }
+
+    std::string getSensorInfo() override {
+        std::stringstream ss;
+        ss << "Legacy Infrared Sensor\n"
+           << "Raw Voltage: " << sensor_->getRawVoltage() << "V\n"
+           << "Valid: " << (sensor_->isValid() ? "Yes" : "No");
+        return ss.str();
     }
 
 private:
-    double current_distance_ = 0.0;
-    rclcpp::Logger logger_{rclcpp::get_logger("LaserSensor")};
+    std::shared_ptr<LegacyInfraredSensor> sensor_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("InfraredSensorAdapter");
 };
 
-// 3. Adaptee - Cảm biến siêu âm mới (Third-party/Legacy code)
-class UltrasonicSensor {
+// Adapter for Modern Ultrasonic Sensor
+class UltrasonicSensorAdapter : public IDistanceSensor {
 public:
-    // Interface khác với chuẩn
-    bool connect() {
-        // Kết nối với sensor
-        return true;
+    explicit UltrasonicSensorAdapter(std::shared_ptr<ModernUltrasonicSensor> sensor)
+        : sensor_(sensor) {
+        RCLCPP_INFO(logger_, "Initializing Ultrasonic Sensor Adapter");
     }
-    
-    float getRangeInInches() {
-        // Đọc khoảng cách theo inch
-        return current_range_;
+
+    double getDistanceMeters() override {
+        // Convert centimeters to meters
+        return sensor_->getMeasurement() / 100.0;
     }
-    
-    bool isConnected() const {
-        return connected_;
+
+    bool isInRange() override {
+        return sensor_->getStatus() == 0;
     }
-    
-    float getBeamWidth() const {
-        return 15.0f;  // 15 degrees
-    }
-    
-    float getMaxInches() const {
-        return 157.48f;  // 4 meters in inches
+
+    std::string getSensorInfo() override {
+        std::stringstream ss;
+        ss << "Modern Ultrasonic Sensor\n"
+           << "Version: " << sensor_->getVersion() << "\n"
+           << "Status: " << sensor_->getStatus();
+        return ss.str();
     }
 
 private:
-    float current_range_ = 0.0f;
-    bool connected_ = false;
+    std::shared_ptr<ModernUltrasonicSensor> sensor_;
+    rclcpp::Logger logger_ = rclcpp::get_logger("UltrasonicSensorAdapter");
 };
+```
 
-// 4. Adapter - Chuyển đổi UltrasonicSensor sang DistanceSensorInterface
-class UltrasonicAdapter : public DistanceSensorInterface {
+## 5. Sử dụng trong ROS2
+
+Ví dụ về cách sử dụng Adapter Pattern trong một ROS2 node:
+
+```cpp
+class DistanceSensorNode : public rclcpp::Node {
 public:
-    explicit UltrasonicAdapter(std::shared_ptr<UltrasonicSensor> sensor)
-        : ultrasonic_(sensor) {
-        if (!ultrasonic_) {
-            throw std::runtime_error("Null ultrasonic sensor provided");
-        }
-    }
-    
-    void initialize() override {
-        RCLCPP_INFO(logger_, "Initializing Ultrasonic Sensor");
-        if (!ultrasonic_->connect()) {
-            throw std::runtime_error("Failed to connect to ultrasonic sensor");
-        }
-    }
-    
-    double getDistanceInMeters() override {
-        if (!ultrasonic_->isConnected()) {
-            throw std::runtime_error("Ultrasonic sensor not connected");
-        }
-        
-        // Chuyển đổi từ inch sang mét
-        return ultrasonic_->getRangeInInches() * 0.0254;
-    }
-    
-    std::string getSensorType() const override {
-        return "ULTRASONIC";
-    }
-    
-    double getMaxRange() const override {
-        // Chuyển đổi max range từ inch sang mét
-        return ultrasonic_->getMaxInches() * 0.0254;
-    }
-    
-    double getMinRange() const override {
-        return 0.02;  // 2 cm
-    }
-    
-    double getFieldOfView() const override {
-        // Chuyển đổi từ độ sang radian
-        return ultrasonic_->getBeamWidth() * M_PI / 180.0;
-    }
-
-private:
-    std::shared_ptr<UltrasonicSensor> ultrasonic_;
-    rclcpp::Logger logger_{rclcpp::get_logger("UltrasonicAdapter")};
-};
-
-// 5. Client code trong ROS2 node
-class ObstacleDetectionNode : public rclcpp::Node {
-public:
-    ObstacleDetectionNode() : Node("obstacle_detection") {
+    DistanceSensorNode() : Node("distance_sensor_node") {
         // Khởi tạo các sensors
-        setupSensors();
-        
-        // Tạo publisher cho khoảng cách
-        distance_pub_ = create_publisher<sensor_msgs::msg::Range>(
-            "obstacle_distance", 10);
-            
-        // Timer để publish dữ liệu
-        timer_ = create_wall_timer(
+        infrared_sensor_ = std::make_shared<LegacyInfraredSensor>();
+        ultrasonic_sensor_ = std::make_shared<ModernUltrasonicSensor>();
+
+        // Tạo adapters
+        infrared_adapter_ = std::make_shared<InfraredSensorAdapter>(infrared_sensor_);
+        ultrasonic_adapter_ = std::make_shared<UltrasonicSensorAdapter>(ultrasonic_sensor_);
+
+        // Tạo publishers
+        infrared_publisher_ = create_publisher<sensor_msgs::msg::Range>(
+            "infrared_distance", 10);
+        ultrasonic_publisher_ = create_publisher<sensor_msgs::msg::Range>(
+            "ultrasonic_distance", 10);
+
+        // Tạo service để lấy sensor info
+        sensor_info_service_ = create_service<custom_msgs::srv::GetSensorInfo>(
+            "get_sensor_info",
+            std::bind(&DistanceSensorNode::handleSensorInfoRequest, this,
+                     std::placeholders::_1, std::placeholders::_2));
+
+        // Tạo timer để publish measurements
+        measurement_timer_ = create_wall_timer(
             std::chrono::milliseconds(100),
-            std::bind(&ObstacleDetectionNode::publishDistances, this));
+            std::bind(&DistanceSensorNode::publishMeasurements, this));
     }
 
 private:
-    void setupSensors() {
-        try {
-            // Khởi tạo laser sensor
-            laser_sensor_ = std::make_shared<LaserSensor>();
-            laser_sensor_->initialize();
-            
-            // Khởi tạo ultrasonic sensor với adapter
-            auto ultrasonic = std::make_shared<UltrasonicSensor>();
-            ultrasonic_sensor_ = std::make_shared<UltrasonicAdapter>(ultrasonic);
-            ultrasonic_sensor_->initialize();
-            
-            RCLCPP_INFO(get_logger(), "All sensors initialized successfully");
-        } catch (const std::exception& e) {
-            RCLCPP_ERROR(get_logger(), "Error initializing sensors: %s", e.what());
-            throw;
-        }
+    void publishMeasurements() {
+        publishSensorData(infrared_adapter_, infrared_publisher_, "infrared_frame");
+        publishSensorData(ultrasonic_adapter_, ultrasonic_publisher_, "ultrasonic_frame");
     }
-    
-    void publishDistances() {
-        try {
-            // Publish dữ liệu từ cả hai sensor
-            publishSensorData(laser_sensor_, "laser");
-            publishSensorData(ultrasonic_sensor_, "ultrasonic");
-        } catch (const std::exception& e) {
-            RCLCPP_ERROR(get_logger(), "Error publishing distances: %s", e.what());
-        }
-    }
-    
+
     void publishSensorData(
-        const std::shared_ptr<DistanceSensorInterface>& sensor,
+        std::shared_ptr<IDistanceSensor> sensor,
+        rclcpp::Publisher<sensor_msgs::msg::Range>::SharedPtr publisher,
         const std::string& frame_id) {
         
         auto msg = sensor_msgs::msg::Range();
+        msg.header.stamp = this->now();
         msg.header.frame_id = frame_id;
-        msg.header.stamp = now();
-        msg.radiation_type = 
-            (sensor->getSensorType() == "LASER") ? 
-            sensor_msgs::msg::Range::INFRARED : 
-            sensor_msgs::msg::Range::ULTRASOUND;
-        msg.field_of_view = sensor->getFieldOfView();
-        msg.min_range = sensor->getMinRange();
-        msg.max_range = sensor->getMaxRange();
-        msg.range = sensor->getDistanceInMeters();
+        msg.radiation_type = sensor_msgs::msg::Range::INFRARED;
+        msg.field_of_view = 0.5;  // 30 degrees in radians
+        msg.min_range = 0.1;      // 10cm
+        msg.max_range = 4.0;      // 4m
         
-        distance_pub_->publish(msg);
+        if (sensor->isInRange()) {
+            msg.range = static_cast<float>(sensor->getDistanceMeters());
+        } else {
+            msg.range = std::numeric_limits<float>::quiet_NaN();
+        }
+        
+        publisher->publish(msg);
     }
-    
-    std::shared_ptr<DistanceSensorInterface> laser_sensor_;
-    std::shared_ptr<DistanceSensorInterface> ultrasonic_sensor_;
-    rclcpp::Publisher<sensor_msgs::msg::Range>::SharedPtr distance_pub_;
-    rclcpp::TimerBase::SharedPtr timer_;
-};
-```
 
-#### 4. Giải thích chi tiết cách hoạt động
-1. **Khởi tạo hệ thống**:
-   - Tạo interface chuẩn cho cảm biến khoảng cách
-   - Laser sensor implement interface này trực tiếp
-   - Ultrasonic sensor được wrap bởi adapter
-
-2. **Chuyển đổi dữ liệu**:
-   - Adapter chuyển đổi đơn vị từ inch sang mét
-   - Chuyển đổi các thông số khác (FOV, ranges)
-   - Xử lý lỗi và exceptions
-
-3. **Publishing dữ liệu**:
-   - Node sử dụng interface chung cho cả hai sensor
-   - Publish dữ liệu theo định dạng ROS2 standard
-   - Xử lý lỗi gracefully
-
-#### 5. Ưu điểm trong ROS2
-1. **Tích hợp linh hoạt**:
-   - Dễ dàng thêm sensors mới
-   - Không cần sửa code hiện có
-   - Tái sử dụng code tối đa
-
-2. **Bảo trì dễ dàng**:
-   - Tách biệt logic chuyển đổi
-   - Dễ thay đổi/cập nhật adapter
-   - Code sạch và có tổ chức
-
-3. **Xử lý lỗi tốt**:
-   - Kiểm tra null pointers
-   - Xử lý connection errors
-   - Exception handling
-
-#### 6. Các trường hợp sử dụng trong ROS2
-1. **Hardware Integration**:
-   - Tích hợp sensors mới
-   - Sử dụng drivers cũ
-   - Chuyển đổi data formats
-
-2. **Message Adaptation**:
-   - Chuyển đổi message types
-   - Custom message bridges
-   - Protocol adaptation
-
-3. **Legacy System Integration**:
-   - Tích hợp code cũ
-   - Cập nhật interfaces
-   - Backwards compatibility
-
-#### 7. Best Practices trong ROS2
-1. **Error Handling**:
-```cpp
-try {
-    double distance = sensor->getDistanceInMeters();
-    if (distance < 0) {
-        throw std::runtime_error("Invalid distance reading");
-    }
-} catch (const std::exception& e) {
-    RCLCPP_ERROR(logger, "Sensor error: %s", e.what());
-    // Fallback behavior
-}
-```
-
-2. **Resource Management**:
-```cpp
-class SensorAdapter {
-    std::unique_ptr<SensorDriver> driver_;
-public:
-    ~SensorAdapter() {
-        if (driver_) {
-            driver_->disconnect();
+    void handleSensorInfoRequest(
+        const custom_msgs::srv::GetSensorInfo::Request::SharedPtr request,
+        custom_msgs::srv::GetSensorInfo::Response::SharedPtr response) {
+        
+        if (request->sensor_type == "infrared") {
+            response->info = infrared_adapter_->getSensorInfo();
+        } else if (request->sensor_type == "ultrasonic") {
+            response->info = ultrasonic_adapter_->getSensorInfo();
+        } else {
+            response->info = "Unknown sensor type";
         }
     }
+
+    // Sensors
+    std::shared_ptr<LegacyInfraredSensor> infrared_sensor_;
+    std::shared_ptr<ModernUltrasonicSensor> ultrasonic_sensor_;
+
+    // Adapters
+    std::shared_ptr<InfraredSensorAdapter> infrared_adapter_;
+    std::shared_ptr<UltrasonicSensorAdapter> ultrasonic_adapter_;
+
+    // Publishers
+    rclcpp::Publisher<sensor_msgs::msg::Range>::SharedPtr infrared_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::Range>::SharedPtr ultrasonic_publisher_;
+
+    // Service
+    rclcpp::Service<custom_msgs::srv::GetSensorInfo>::SharedPtr sensor_info_service_;
+
+    // Timer
+    rclcpp::TimerBase::SharedPtr measurement_timer_;
 };
 ```
 
-3. **Thread Safety**:
-```cpp
-std::mutex sensor_mutex_;
-double getDistance() {
-    std::lock_guard<std::mutex> lock(sensor_mutex_);
-    return sensor_->getDistanceInMeters();
-}
-```
+## 6. Lợi ích
 
-#### 8. Mở rộng và tùy chỉnh
-1. **Two-Way Adapter**:
-```cpp
-class BidirectionalAdapter : public NewInterface, public OldInterface {
-    // Implement both interfaces
-    // Convert in both directions
-};
-```
+1. **Tái sử dụng code**:
+   - Sử dụng được legacy code
+   - Tích hợp các thư viện bên ngoài
+   - Không cần sửa code gốc
 
-2. **Multiple Adaptation**:
-```cpp
-class MultiSensorAdapter : public DistanceSensorInterface {
-    std::vector<std::unique_ptr<BaseSensor>> sensors_;
-public:
-    double getDistanceInMeters() override {
-        // Combine data from multiple sensors
-    }
-};
-```
+2. **Tính linh hoạt**:
+   - Dễ dàng thêm sensors mới
+   - Chuyển đổi giữa các formats
+   - Tương thích nhiều platforms
 
-3. **Dynamic Adaptation**:
-```cpp
-class ConfigurableAdapter : public DistanceSensorInterface {
-    std::map<std::string, double> conversion_factors_;
-public:
-    void updateConversion(const std::string& unit, double factor) {
-        conversion_factors_[unit] = factor;
-    }
-};
-```
+3. **Bảo trì dễ dàng**:
+   - Code module hóa
+   - Dễ test và debug
+   - Thay đổi không ảnh hưởng code khác
 
-#### 9. Testing
-1. **Mock Objects**:
-```cpp
-class MockUltrasonicSensor : public UltrasonicSensor {
-public:
-    MOCK_METHOD(float, getRangeInInches, (), (override));
-    MOCK_METHOD(bool, connect, (), (override));
-};
-```
+4. **Chuẩn hóa interface**:
+   - Interface thống nhất
+   - Giảm phức tạp
+   - Dễ quản lý
 
-2. **Unit Tests**:
-```cpp
-TEST(UltrasonicAdapterTest, ConversionTest) {
-    auto mock_sensor = std::make_shared<MockUltrasonicSensor>();
-    EXPECT_CALL(*mock_sensor, getRangeInInches())
-        .WillOnce(Return(39.37f));  // 1 meter
-        
-    UltrasonicAdapter adapter(mock_sensor);
-    EXPECT_NEAR(adapter.getDistanceInMeters(), 1.0, 0.001);
-}
-```
+## 7. Khi nào sử dụng
 
-3. **Integration Tests**:
-```cpp
-TEST(SensorSystemTest, FullSystemTest) {
-    ObstacleDetectionNode node;
-    
-    // Test sensor initialization
-    EXPECT_NO_THROW(node.setupSensors());
-    
-    // Test data publishing
-    auto messages = std::make_shared<MessageCollector>();
-    node.addSubscriber(messages);
-    
-    // Verify message contents
-    EXPECT_TRUE(messages->waitForMessage(1s));
-    auto msg = messages->getLastMessage();
-    EXPECT_TRUE(msg.range > 0);
-}
-```
+- Cần tích hợp các hệ thống không tương thích
+- Muốn tái sử dụng legacy code
+- Cần chuyển đổi dữ liệu giữa các formats
+- Muốn chuẩn hóa interface cho nhiều components
+- Tích hợp third-party libraries
 
-#### 10. Kết luận
-Adapter Pattern là một mẫu thiết kế cấu trúc quan trọng trong phát triển phần mềm robotics với ROS2, đặc biệt trong việc tích hợp các thành phần không tương thích. Pattern này mang lại nhiều giá trị thực tiễn:
+## 8. Lưu ý
 
-1. **Tích hợp linh hoạt**:
-   - Cho phép sử dụng các sensors và thiết bị mới mà không cần sửa đổi code hiện có
-   - Hỗ trợ việc chuyển đổi giữa các định dạng dữ liệu khác nhau
-   - Tạo cầu nối giữa các hệ thống legacy và modern
+1. Thiết kế Adapter:
+   - Giữ adapter đơn giản
+   - Chỉ chuyển đổi những gì cần thiết
+   - Xử lý edge cases cẩn thận
 
-2. **Tối ưu cho robotics**:
-   - Dễ dàng thêm các sensors mới vào hệ thống
-   - Chuyển đổi mượt mà giữa các đơn vị đo lường
-   - Tương thích với nhiều loại hardware interfaces
+2. Hiệu suất:
+   - Tránh chuyển đổi không cần thiết
+   - Cân nhắc caching nếu chuyển đổi phức tạp
+   - Theo dõi overhead
 
-3. **Bảo trì hiệu quả**:
-   - Tách biệt logic chuyển đổi khỏi business logic
-   - Dễ dàng cập nhật và thay đổi adapters
-   - Code sạch và có cấu trúc rõ ràng
-
-4. **Giá trị thực tế**:
-   - Tiết kiệm thời gian và chi phí phát triển
-   - Giảm thiểu rủi ro khi tích hợp components mới
-   - Tăng khả năng tái sử dụng code
-
-Trong ví dụ về việc tích hợp cảm biến siêu âm mới vào hệ thống robot, chúng ta đã thấy Adapter Pattern giúp giải quyết vấn đề không tương thích một cách thanh lịch và hiệu quả. Pattern này là công cụ thiết yếu cho các nhà phát triển ROS2 trong việc xây dựng hệ thống robotics linh hoạt và dễ mở rộng.
-
-# Adapter Pattern in ROS2
-
-## What is the Adapter Pattern?
-
-The Adapter pattern allows objects with incompatible interfaces to collaborate. It acts as a wrapper between two objects, catching calls for one object and transforming them into a format and interface recognizable by the second.
-
-## Use Case in Robotics
-
-In robotics, you often integrate third-party hardware or software libraries that have different interfaces from your existing system. For example, you might have a legacy sensor that provides data in an old format, but your new ROS2 system expects data in a standard `sensor_msgs` format. An adapter can be used to convert the legacy data format into the one expected by the rest of the ROS2 nodes.
-
-Another example is adapting a non-standard motor controller API to a standard ROS2 `ros2_control` hardware interface.
-
-## C++ Example
-
-Here is a C++ example of an Adapter pattern to make a legacy temperature sensor compatible with a modern monitoring system.
-
-```cpp
-// Target interface (what the client expects)
-class ModernSensor {
-public:
-    virtual ~ModernSensor() {}
-    virtual double getTemperatureCelsius() const = 0;
-};
-
-// Adaptee (the legacy component with an incompatible interface)
-class LegacyTemperatureSensor {
-public:
-    double getTempFahrenheit() const {
-        // Simulates reading from a legacy sensor
-        return 98.6;
-    }
-};
-
-// Adapter
-class SensorAdapter : public ModernSensor {
-private:
-    LegacyTemperatureSensor* legacySensor;
-
-public:
-    SensorAdapter(LegacyTemperatureSensor* sensor) : legacySensor(sensor) {}
-
-    double getTemperatureCelsius() const override {
-        double fahrenheit = legacySensor->getTempFahrenheit();
-        // Convert Fahrenheit to Celsius
-        return (fahrenheit - 32.0) * 5.0 / 9.0;
-    }
-};
-```
-
-## Best Practices
-
-*   **One-Way Adaptation:** An adapter typically provides a one-way conversion. If you need two-way communication, you might need a two-way adapter.
-*   **Object vs. Class Adapter:** The example above is an Object Adapter (using composition). A Class Adapter (using multiple inheritance) is also possible but less common in C++.
-*   **Keep it Simple:** The adapter should only be responsible for the interface conversion and not add new business logic.
-
-## Extensions and Variations
-
-*   **Pluggable Adapters:** You can create a system where adapters can be discovered and loaded at runtime, for example, using a plugin mechanism like `pluginlib` in ROS.
-*   **Default Adapter:** Provide a default adapter that does nothing or returns default values if no specific adapter is found.
-
-## Testing
-
-*   **Unit Testing:** Test the adapter to ensure that it correctly converts the interface and data.
-*   **Integration Testing:** Test the adapter with the client and the adaptee to ensure they work together seamlessly.
+3. Trong ROS2:
+   - Đảm bảo thread safety
+   - Xử lý transform frames đúng
+   - Quản lý lifecycle của adapters
+   - Implement proper cleanup 
