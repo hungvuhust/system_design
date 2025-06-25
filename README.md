@@ -226,7 +226,7 @@ public:
 - "Real-Time C++" by Christopher Kormanyos
 
 ### Robotics Resources
-- [Navigation2](https://navigation.ros.org/)
+- [Navigation2](https://docs.nav2.org/)
 - [MoveIt2](https://moveit.ros.org/)
 - [Gazebo](https://gazebosim.org/)
 
