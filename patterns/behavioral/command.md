@@ -1,4 +1,4 @@
-# Command Pattern trong ROS2 và Robotics
+# COMMAND PATTERN 
 
 ## 1. Giới thiệu
 
@@ -14,6 +14,7 @@ Command Pattern là một behavioral pattern cho phép đóng gói một request
 ## 2. Vấn đề
 
 Trong robotics, chúng ta thường gặp các tình huống cần:
+
 - Quản lý nhiều loại commands khác nhau
 - Queue và schedule commands
 - Undo/redo operations
@@ -24,6 +25,7 @@ Trong robotics, chúng ta thường gặp các tình huống cần:
 ## 3. Giải pháp
 
 Command Pattern giải quyết các vấn đề trên bằng cách:
+
 1. Tách biệt object gửi request và object thực hiện request
 2. Đóng gói request thành object
 3. Cho phép handle requests theo nhiều cách khác nhau

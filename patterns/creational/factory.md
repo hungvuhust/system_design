@@ -1,4 +1,4 @@
-# FACTORY PATTERN TRONG ROS2
+# FACTORY PATTERN 
 
 ## 1. Giới thiệu đơn giản
 Factory Pattern là một mẫu thiết kế khởi tạo cho phép tạo các đối tượng mà không cần chỉ định chính xác lớp của chúng. Trong ROS2, pattern này đặc biệt hữu ích khi:
@@ -423,6 +423,7 @@ private:
    - Communication handlers
 
 #### 7. Best Practices trong ROS2
+
 1. **Error Handling**:
 ```cpp
 try {

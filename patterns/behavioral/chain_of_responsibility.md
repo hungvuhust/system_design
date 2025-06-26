@@ -1,4 +1,4 @@
-# Chain of Responsibility Pattern trong ROS2 và Robotics
+# CHAIN OF RESPONSIBILITY PATTERN 
 
 ## 1. Giới thiệu
 
@@ -14,6 +14,7 @@ Chain of Responsibility là một behavioral pattern cho phép chuyển yêu c�
 ## 2. Vấn đề
 
 Trong robotics, chúng ta thường gặp các tình huống cần:
+
 - Xử lý dữ liệu theo nhiều bước
 - Kiểm tra nhiều điều kiện an toàn
 - Lựa chọn behavior phù hợp
@@ -23,6 +24,7 @@ Trong robotics, chúng ta thường gặp các tình huống cần:
 ## 3. Giải pháp
 
 Chain of Responsibility giải quyết các vấn đề trên bằng cách:
+
 1. Tách logic xử lý thành các handlers riêng biệt
 2. Sắp xếp handlers thành một chuỗi
 3. Cho phép handlers quyết định xử lý hoặc chuyển tiếp
@@ -364,18 +366,21 @@ private:
 ## 8. Lưu ý
 
 1. Thiết kế:
+
    - Xác định rõ trách nhiệm của mỗi handler
    - Cân nhắc thứ tự xử lý
    - Handle edge cases
    - Tránh chains quá dài
 
 2. Implementation:
+
    - Thread safety
    - Error handling
    - Performance considerations
    - Memory management
 
 3. Trong ROS2:
+
    - Message passing overhead
    - Timing considerations
    - Resource management

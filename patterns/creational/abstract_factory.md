@@ -1,114 +1,6 @@
-# Abstract Factory Pattern in ROS2
+# ABSTRACT FACTORY PATTERN 
 
-## 1. Abstract Factory Pattern là gì?
-
-Abstract Factory Pattern là một mẫu thiết kế khởi tạo cho phép tạo ra các họ đối tượng liên quan hoặc phụ thuộc mà không cần chỉ định các lớp cụ thể của chúng. Có thể hiểu đây là "factory của các factory".
-
-## 2. Ứng dụng trong Robotics
-
-Trong robotics, bạn có thể cần hỗ trợ nhiều nhà cung cấp phần cứng cho một nhóm các thành phần liên quan, ví dụ: cánh tay robot, gripper, camera. Mỗi vendor cung cấp một bộ sản phẩm tương thích với nhau. Abstract Factory giúp tạo ra các thành phần cho từng vendor, đảm bảo tính tương thích.
-
-Ví dụ: bạn có thể có interface `RobotComponentFactory`, với các implementation như `VendorAFactory`, `VendorBFactory`. Mỗi factory sẽ tạo ra arm, gripper, camera phù hợp với vendor đó.
-
-## 3. Ví dụ C++
-
-```cpp
-// Abstract Product A
-class RoboticArm {
-public:
-    virtual ~RoboticArm() {}
-    virtual std::string getArmModel() const = 0;
-};
-
-// Concrete Product A1
-class VendorAArm : public RoboticArm {
-public:
-    std::string getArmModel() const override {
-        return "Vendor A Robotic Arm";
-    }
-};
-
-// Concrete Product A2
-class VendorBArm : public RoboticArm {
-public:
-    std::string getArmModel() const override {
-        return "Vendor B Robotic Arm";
-    }
-};
-
-// Abstract Product B
-class Gripper {
-public:
-    virtual ~Gripper() {}
-    virtual std::string getGripperType() const = 0;
-};
-
-// Concrete Product B1
-class VendorAGripper : public Gripper {
-public:
-    std::string getGripperType() const override {
-        return "Vendor A Gripper";
-    }
-};
-
-// Concrete Product B2
-class VendorBGripper : public Gripper {
-public:
-    std::string getGripperType() const override {
-        return "Vendor B Gripper";
-    }
-};
-
-// Abstract Factory
-class RobotComponentFactory {
-public:
-    virtual ~RobotComponentFactory() {}
-    virtual RoboticArm* createArm() const = 0;
-    virtual Gripper* createGripper() const = 0;
-};
-
-// Concrete Factory 1
-class VendorAFactory : public RobotComponentFactory {
-public:
-    RoboticArm* createArm() const override {
-        return new VendorAArm();
-    }
-    Gripper* createGripper() const override {
-        return new VendorAGripper();
-    }
-};
-
-// Concrete Factory 2
-class VendorBFactory : public RobotComponentFactory {
-public:
-    RoboticArm* createArm() const override {
-        return new VendorBArm();
-    }
-    Gripper* createGripper() const override {
-        return new VendorBGripper();
-    }
-};
-```
-
-## 4. Best Practices
-
-*   **Tính nhất quán:** Abstract Factory đảm bảo các đối tượng được tạo ra thuộc cùng một họ và tương thích với nhau.
-*   **Dựa trên interface:** Code client nên phụ thuộc vào interface abstract factory và abstract product, không phụ thuộc vào các lớp cụ thể.
-*   **Dễ mở rộng:** Thêm một họ sản phẩm mới rất dễ dàng, chỉ cần tạo factory và các product mới.
-
-## 5. Mở rộng và Biến thể
-
-*   **Cấu hình runtime:** Có thể chọn factory cụ thể tại runtime, ví dụ dựa trên file cấu hình hoặc ROS parameter.
-*   **Singleton Factory:** Các factory cụ thể thường được triển khai dạng Singleton.
-
-## 6. Testing
-
-*   **Unit Test:** Test từng factory cụ thể để đảm bảo tạo đúng họ sản phẩm.
-*   **Integration Test:** Test code client với các factory khác nhau để đảm bảo hoạt động đúng với mọi họ sản phẩm.
-
-## ABSTRACT FACTORY PATTERN TRONG ROS2
-
-### 1. Giới thiệu đơn giản
+## 1. Giới thiệu đơn giản
 Abstract Factory Pattern là một mẫu thiết kế khởi tạo cho phép tạo các họ đối tượng liên quan mà không cần chỉ định các lớp cụ thể của chúng. Trong ROS2, pattern này đặc biệt hữu ích khi:
 
 - Tạo các bộ controllers hoàn chỉnh (position, velocity, effort)
@@ -116,10 +8,10 @@ Abstract Factory Pattern là một mẫu thiết kế khởi tạo cho phép t�
 - Tạo các bộ message handlers và transformers
 - Quản lý các subsystems phức tạp
 
-### 2. Định nghĩa chi tiết
+## 2. Định nghĩa chi tiết
 Abstract Factory Pattern cung cấp một interface để tạo các họ đối tượng liên quan hoặc phụ thuộc mà không cần chỉ định các lớp cụ thể của chúng.
 
-#### Các thành phần chính:
+### Các thành phần chính:
 1. **Abstract Factory**:
    - Interface chung cho việc tạo products
    - Định nghĩa các factory methods
@@ -136,7 +28,7 @@ Abstract Factory Pattern cung cấp một interface để tạo các họ đối
    - Implements abstract products
    - Các sản phẩm cụ thể
 
-### 3. Ví dụ thực tế trong ROS2
+## 3. Ví dụ thực tế trong ROS2
 ```cpp
 // 1. Abstract Products
 class MotionController {
@@ -629,7 +521,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-### 4. Giải thích chi tiết cách hoạt động
+## 4. Giải thích chi tiết cách hoạt động
 1. **Abstract Factory**:
    - NavigationSystemFactory định nghĩa interface
    - Tạo các components liên quan
@@ -645,7 +537,7 @@ int main(int argc, char** argv) {
    - Định nghĩa interface chung
    - Tính đa hình thông qua virtual methods
 
-### 5. Ưu điểm trong ROS2
+## 5. Ưu điểm trong ROS2
 1. **System Consistency**:
    - Components tương thích
    - Cấu hình nhất quán
@@ -661,7 +553,7 @@ int main(int argc, char** argv) {
    - Separation of concerns
    - Dễ test và debug
 
-### 6. Các trường hợp sử dụng trong ROS2
+## 6. Các trường hợp sử dụng trong ROS2
 1. **Navigation Systems**:
    - Indoor/Outdoor navigation
    - Multi-robot systems
@@ -677,7 +569,7 @@ int main(int argc, char** argv) {
    - Environment adaptation
    - Multi-mode operation
 
-### 7. Best Practices trong ROS2
+## 7. Best Practices trong ROS2
 1. **Error Handling**:
 ```cpp
 try {
@@ -714,7 +606,7 @@ public:
 };
 ```
 
-### 8. Mở rộng và tùy chỉnh
+## 8. Mở rộng và tùy chỉnh
 1. **Environment Detection**:
 ```cpp
 class AutoNavigationFactory : public NavigationSystemFactory {
@@ -749,7 +641,7 @@ class PluginNavigationFactory : public NavigationSystemFactory {
 };
 ```
 
-### 9. Testing
+## 9. Testing
 1. **Mock Objects**:
 ```cpp
 class MockNavigationFactory : public NavigationSystemFactory {
@@ -786,7 +678,7 @@ TEST(NavigationSystemTest, FullSystemTest) {
 }
 ```
 
-### 10. Kết luận
+## 10. Kết luận
 Abstract Factory Pattern là một mẫu thiết kế quan trọng trong ROS2, đặc biệt hữu ích cho việc tạo các hệ thống phức tạp với nhiều components liên quan. Pattern này mang lại nhiều lợi ích:
 
 1. **System Consistency**:

@@ -41,7 +41,7 @@ FINAL_PDF="output/design_patterns_ros2.pdf"
 # Xóa file tạm nếu đã tồn tại
 rm -f $TMP_FILE
 
-# Tạo file header.tex cho font configuration
+# Tạo file header.tex cho font và mục lục configuration
 cat << 'EOF' > output/header.tex
 \usepackage{fontspec}
 \setmainfont{NotoSans}[
@@ -58,120 +58,106 @@ cat << 'EOF' > output/header.tex
     UprightFont = *-Regular,
     BoldFont = *-Bold
 ]
+
+% Cấu hình cho mục lục
+\usepackage{tocloft}
+\renewcommand{\cftsecfont}{\normalfont}
+\renewcommand{\cftsecpagefont}{\normalfont}
+\setlength{\cftbeforesecskip}{2pt}
+\setlength{\cftbeforesubsecskip}{2pt}
+
+% Chỉ đánh số cho chapter (level 0)
+\setcounter{secnumdepth}{0}
+\setcounter{tocdepth}{3}
+
+% Định dạng lại numbering cho section
+\makeatletter
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{}
+\renewcommand{\thesubsubsection}{}
+\makeatother
+
+% Cấu hình cho code blocks
 \usepackage{fancyvrb}
 \fvset{fontsize=\small}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},fontsize=\small}
+
+% Cấu hình cho hyperlinks
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=blue,
+    pdftitle={Design Patterns trong ROS2 và Robotics},
+    pdfauthor={Hưng Vũ},
+    pdfsubject={Design Patterns},
+    pdfkeywords={ROS2, Design Patterns, Robotics}
+}
 EOF
 
-# Thêm trang bìa
+# Thêm trang bìa và thông tin
 cat << 'EOF' > $TMP_FILE
-# Design Patterns trong ROS2 và Robotics
+---
+title: "DESIGN PATTERNS TRONG ROBOTICS"
+author: "Hưng Vũ"
+date: \today
+documentclass: report
+classoption: oneside
+geometry: margin=1in
+fontsize: 11pt
+---
 
-## Tài liệu tổng hợp về Design Patterns và ứng dụng trong ROS2
-
-### Mục lục
+\tableofcontents
+\newpage
 
 EOF
 
-# Thêm README.md vào đầu file (bỏ qua phần header và mục lục)
-tail -n +12 README.md >> $TMP_FILE
+# Thêm toàn bộ nội dung README
+cat README.md >> $TMP_FILE
 
 # Thêm phân cách section
-echo -e "\n\n---\n\n# Phần 1: Creational Patterns\n" >> $TMP_FILE
+echo -e "\n\n# Phần 1: Creational Patterns\n" >> $TMP_FILE
 
 # Thêm các Creational Patterns
-echo -e "\n## Abstract Factory Pattern\n" >> $TMP_FILE
-cat patterns/creational/abstract_factory.md >> $TMP_FILE
-
-echo -e "\n## Builder Pattern\n" >> $TMP_FILE
-cat patterns/creational/builder.md >> $TMP_FILE
-
-echo -e "\n## Factory Pattern\n" >> $TMP_FILE
-cat patterns/creational/factory.md >> $TMP_FILE
-
-echo -e "\n## Prototype Pattern\n" >> $TMP_FILE
-cat patterns/creational/prototype.md >> $TMP_FILE
-
-echo -e "\n## Singleton Pattern\n" >> $TMP_FILE
-cat patterns/creational/singleton.md >> $TMP_FILE
+for pattern in abstract_factory builder factory prototype singleton; do
+    echo -e "\n## $(echo $pattern | tr '_' ' ' | sed 's/\b\(.\)/\u\1/g') Pattern\n" >> $TMP_FILE
+    cat "patterns/creational/$pattern.md" | tail -n +2 >> $TMP_FILE
+done
 
 # Thêm phân cách section
-echo -e "\n\n---\n\n# Phần 2: Structural Patterns\n" >> $TMP_FILE
+echo -e "\n\n# Phần 2: Structural Patterns\n" >> $TMP_FILE
 
 # Thêm các Structural Patterns
-echo -e "\n## Adapter Pattern\n" >> $TMP_FILE
-cat patterns/structural/adapter.md >> $TMP_FILE
-
-echo -e "\n## Bridge Pattern\n" >> $TMP_FILE
-cat patterns/structural/bridge.md >> $TMP_FILE
-
-echo -e "\n## Composite Pattern\n" >> $TMP_FILE
-cat patterns/structural/composite.md >> $TMP_FILE
-
-echo -e "\n## Decorator Pattern\n" >> $TMP_FILE
-cat patterns/structural/decorator.md >> $TMP_FILE
-
-echo -e "\n## Facade Pattern\n" >> $TMP_FILE
-cat patterns/structural/facade.md >> $TMP_FILE
-
-echo -e "\n## Flyweight Pattern\n" >> $TMP_FILE
-cat patterns/structural/flyweight.md >> $TMP_FILE
-
-echo -e "\n## Proxy Pattern\n" >> $TMP_FILE
-cat patterns/structural/proxy.md >> $TMP_FILE
+for pattern in adapter bridge composite decorator facade flyweight proxy; do
+    echo -e "\n## $(echo $pattern | tr '_' ' ' | sed 's/\b\(.\)/\u\1/g') Pattern\n" >> $TMP_FILE
+    cat "patterns/structural/$pattern.md" | tail -n +2 >> $TMP_FILE
+done
 
 # Thêm phân cách section
-echo -e "\n\n---\n\n# Phần 3: Behavioral Patterns\n" >> $TMP_FILE
+echo -e "\n\n# Phần 3: Behavioral Patterns\n" >> $TMP_FILE
 
 # Thêm các Behavioral Patterns
-echo -e "\n## Chain of Responsibility Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/chain_of_responsibility.md >> $TMP_FILE
-
-echo -e "\n## Command Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/command.md >> $TMP_FILE
-
-echo -e "\n## Interpreter Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/interpreter.md >> $TMP_FILE
-
-echo -e "\n## Iterator Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/iterator.md >> $TMP_FILE
-
-echo -e "\n## Mediator Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/mediator.md >> $TMP_FILE
-
-echo -e "\n## Memento Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/memento.md >> $TMP_FILE
-
-echo -e "\n## Observer Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/observer.md >> $TMP_FILE
-
-echo -e "\n## State Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/state.md >> $TMP_FILE
-
-echo -e "\n## Strategy Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/strategy.md >> $TMP_FILE
-
-echo -e "\n## Template Method Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/template_method.md >> $TMP_FILE
-
-echo -e "\n## Visitor Pattern\n" >> $TMP_FILE
-cat patterns/behavioral/visitor.md >> $TMP_FILE
+for pattern in chain_of_responsibility command interpreter iterator mediator memento observer state strategy template_method visitor; do
+    echo -e "\n## $(echo $pattern | tr '_' ' ' | sed 's/\b\(.\)/\u\1/g') Pattern\n" >> $TMP_FILE
+    cat "patterns/behavioral/$pattern.md" | tail -n +2 >> $TMP_FILE
+done
 
 # Tạo PDF với pandoc
 echo "Đang tạo PDF..."
 pandoc $TMP_FILE \
-    -f markdown \
+    -f markdown+raw_tex \
     -t pdf \
     --toc \
     --toc-depth=3 \
+    --top-level-division=chapter \
+    --number-sections \
     --highlight-style=tango \
     --pdf-engine=xelatex \
-    -V geometry:margin=1in \
-    -V documentclass=report \
-    -V fontsize=11pt \
-    -V colorlinks=true \
-    -V linkcolor=blue \
-    -V urlcolor=blue \
+    -V mainfont="NotoSans-Regular" \
+    -V monofont="NotoSansMono-Regular" \
+    -V lang=vi \
+    -V babel-lang=vietnamese \
     -H output/header.tex \
     -o $FINAL_PDF
 

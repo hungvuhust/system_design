@@ -1,33 +1,29 @@
-# DESIGN PATTERNS TRONG ROS2 VÀ ROBOTICS
+# DESIGN PATTERNS TRONG ROBOTICS
 
 ## Giới thiệu
 
 Design Patterns là những giải pháp thiết kế phần mềm được tái sử dụng cho các vấn đề thường gặp trong lập trình. Trong ngữ cảnh ROS2 và robotics, các pattern này trở nên đặc biệt quan trọng vì:
 
-### Tại sao Design Patterns quan trọng trong Robotics?
+1. **Quản lý độ phức tạp**: Hệ thống robot hiện đại cực kỳ phức tạp với nhiều sensors, actuators, algorithms
+2. **Yêu cầu thời gian thực**: Robotics cần performance cao và response time thấp
+3. **Tính an toàn quan trọng**: Lỗi trong hệ thống robot có thể gây nguy hiểm
+4. **Tính module hóa**: Cần thiết kế modular để dễ maintain và extend
+5. **Khả năng tái sử dụng**: Code robotics thường được tái sử dụng cho nhiều robot khác nhau
+6. **Hệ thống phân tán**: ROS2 là distributed system với nhiều nodes communication
 
-1. **Complexity Management**: Hệ thống robot hiện đại cực kỳ phức tạp với nhiều sensors, actuators, algorithms
-2. **Real-time Requirements**: Robotics cần performance cao và response time thấp
-3. **Safety Critical**: Lỗi trong hệ thống robot có thể gây nguy hiểm
-4. **Modularity**: Cần thiết kế modular để dễ maintain và extend
-5. **Reusability**: Code robotics thường được tái sử dụng cho nhiều robot khác nhau
-6. **Distributed Systems**: ROS2 là distributed system với nhiều nodes communication
+## Lợi ích của Design Patterns trong ROS2
 
-### Lợi ích của Design Patterns trong ROS2
+- **Tái sử dụng code**: Tái sử dụng solutions đã được verify
+- **Bảo trì dễ dàng**: Code structure rõ ràng, dễ maintain
+- **Khả năng mở rộng**: Dễ dàng scale từ single robot đến robot fleets
+- **Kiểm thử**: Pattern chuẩn hóa giúp testing dễ dàng hơn
+- **Tài liệu**: Common vocabulary cho team development
+- **Hiệu năng**: Optimized solutions cho common problems
 
-- **Code Reusability**: Tái sử dụng solutions đã được verify
-- **Maintainability**: Code structure rõ ràng, dễ maintain
-- **Scalability**: Dễ dàng scale từ single robot đến robot fleets
-- **Testing**: Pattern chuẩn hóa giúp testing dễ dàng hơn
-- **Documentation**: Common vocabulary cho team development
-- **Performance**: Optimized solutions cho common problems
+## Các nhóm Design Pattern
 
-## Cấu trúc Documentation
-
-Documentation này được tổ chức theo 3 nhóm pattern chính:
-
-### [Creational Patterns](./patterns/creational/)
-Các pattern liên quan đến object creation mechanisms
+### 1. Creational Patterns
+Các pattern liên quan đến cơ chế tạo đối tượng:
 
 - **[Abstract Factory](./patterns/creational/abstract_factory.md)**: Tạo families của related objects
 - **[Builder](./patterns/creational/builder.md)**: Xây dựng complex objects step-by-step
@@ -35,52 +31,52 @@ Các pattern liên quan đến object creation mechanisms
 - **[Prototype](./patterns/creational/prototype.md)**: Clone objects thay vì tạo mới
 - **[Singleton](./patterns/creational/singleton.md)**: Ensure chỉ có một instance của class
 
-### [Structural Patterns](./patterns/structural/)
-Các pattern liên quan đến object composition
+### 2. Structural Patterns
+Các pattern liên quan đến cấu trúc và tổ chức đối tượng:
 
 - **[Adapter](./patterns/structural/adapter.md)**: Interface compatibility giữa incompatible classes
 - **[Bridge](./patterns/structural/bridge.md)**: Tách abstraction khỏi implementation
-- **[Composite](./patterns/structural/composite.md)**: Cấu trúc các đối tượng theo dạng cây và xử lý chúng một cách thống nhất.
-- **[Decorator](./patterns/structural/decorator.md)**: Thêm chức năng cho đối tượng một cách linh hoạt.
-- **[Facade](./patterns/structural/facade.md)**: Cung cấp một giao diện đơn giản cho một hệ thống phức tạp.
-- **[Flyweight](./patterns/structural/flyweight.md)**: Giảm chi phí bộ nhớ bằng cách chia sẻ trạng thái chung.
-- **[Proxy](./patterns/structural/proxy.md)**: Cung cấp một đối tượng thay thế để kiểm soát quyền truy cập vào một đối tượng khác.
+- **[Composite](./patterns/structural/composite.md)**: Tổ chức đối tượng theo cấu trúc cây
+- **[Decorator](./patterns/structural/decorator.md)**: Thêm chức năng cho đối tượng linh hoạt
+- **[Facade](./patterns/structural/facade.md)**: Giao diện đơn giản cho hệ thống phức tạp
+- **[Flyweight](./patterns/structural/flyweight.md)**: Tối ưu bộ nhớ bằng chia sẻ trạng thái
+- **[Proxy](./patterns/structural/proxy.md)**: Kiểm soát truy cập đối tượng qua proxy
 
-### [Behavioral Patterns](./patterns/behavioral/)
-Các pattern liên quan đến communication giữa objects
+### 3. Behavioral Patterns
+Các pattern liên quan đến tương tác và giao tiếp giữa đối tượng:
 
-- **[Chain of Responsibility](./patterns/behavioral/chain_of_responsibility.md)**: Xử lý requests theo chuỗi handlers
-- **[Command](./patterns/behavioral/command.md)**: Encapsulate requests dưới dạng objects
-- **[Interpreter](./patterns/behavioral/interpreter.md)**: Định nghĩa grammar cho ngôn ngữ
+- **[Chain of Responsibility](./patterns/behavioral/chain_of_responsibility.md)**: Xử lý requests theo chuỗi
+- **[Command](./patterns/behavioral/command.md)**: Đóng gói requests thành objects
+- **[Interpreter](./patterns/behavioral/interpreter.md)**: Định nghĩa ngữ pháp cho ngôn ngữ
 - **[Iterator](./patterns/behavioral/iterator.md)**: Truy cập tuần tự các phần tử
-- **[Mediator](./patterns/behavioral/mediator.md)**: Định nghĩa giao tiếp giữa objects
-- **[Memento](./patterns/behavioral/memento.md)**: Lưu và khôi phục state
-- **[Observer](./patterns/behavioral/observer.md)**: Notification system cho state changes
-- **[State](./patterns/behavioral/state.md)**: Thay đổi behavior khi state thay đổi
-- **[Strategy](./patterns/behavioral/strategy.md)**: Encapsulate algorithms và make them interchangeable
-- **[Template Method](./patterns/behavioral/template_method.md)**: Định nghĩa skeleton của algorithm
-- **[Visitor](./patterns/behavioral/visitor.md)**: Thêm operations mới cho object structure
+- **[Mediator](./patterns/behavioral/mediator.md)**: Quản lý giao tiếp giữa objects
+- **[Memento](./patterns/behavioral/memento.md)**: Lưu và khôi phục trạng thái
+- **[Observer](./patterns/behavioral/observer.md)**: Thông báo khi có thay đổi trạng thái
+- **[State](./patterns/behavioral/state.md)**: Thay đổi hành vi theo trạng thái
+- **[Strategy](./patterns/behavioral/strategy.md)**: Đóng gói và hoán đổi thuật toán
+- **[Template Method](./patterns/behavioral/template_method.md)**: Định nghĩa khung thuật toán
+- **[Visitor](./patterns/behavioral/visitor.md)**: Thêm thao tác mới cho cấu trúc object
 
-## ROS2 Specific Considerations
+## Áp dụng trong ROS2
 
-### Node Architecture
-ROS2 nodes tự nhiên implement nhiều patterns:
-- **Observer Pattern**: Publishers/Subscribers
-- **Command Pattern**: Action servers
-- **Strategy Pattern**: Plugin systems
+### 1. Kiến trúc Node
+ROS2 nodes tự nhiên áp dụng nhiều patterns:
+- Publishers/Subscribers: Observer Pattern
+- Action servers: Command Pattern
+- Plugin systems: Strategy Pattern
 
-### Communication Patterns
+### 2. Mô hình giao tiếp
 - **Topics**: Publish/Subscribe (Observer pattern)
 - **Services**: Request/Response (Command pattern)
 - **Actions**: Long-running tasks (State pattern)
 - **Parameters**: Configuration (Strategy pattern)
 
-### Lifecycle Management
-- **Managed Nodes**: State pattern implementation
+### 3. Quản lý vòng đời
+- **Managed Nodes**: State pattern
 - **Component Lifecycle**: Factory và Builder patterns
 - **Resource Management**: RAII và Singleton patterns
 
-## Common Robotics Use Cases
+## Ví dụ thực tế
 
 ### 1. Sensor Fusion
 ```cpp
@@ -140,60 +136,57 @@ public:
 };
 ```
 
-## Performance Considerations
+## Hiệu năng và Tối ưu
 
-### Memory Management
+### 1. Quản lý bộ nhớ
 - **RAII**: Resource Acquisition Is Initialization
-- **Smart Pointers**: Automatic memory management
-- **Object Pooling**: Reuse expensive objects
+- **Smart Pointers**: Quản lý bộ nhớ tự động
+- **Object Pooling**: Tái sử dụng đối tượng tốn kém
 
-### Real-time Constraints
-- **Lock-free Programming**: Avoid blocking operations
-- **Memory Pre-allocation**: Prevent dynamic allocation in real-time loops
-- **Priority Scheduling**: Use appropriate thread priorities
+### 2. Ràng buộc thời gian thực
+- **Lock-free Programming**: Tránh blocking operations
+- **Memory Pre-allocation**: Tránh cấp phát động trong vòng lặp
+- **Priority Scheduling**: Sử dụng độ ưu tiên thread phù hợp
 
-### Network Optimization
-- **Message Batching**: Combine multiple messages
-- **Compression**: Reduce network bandwidth
-- **Local Processing**: Minimize network communication
+### 3. Tối ưu mạng
+- **Message Batching**: Gộp nhiều messages
+- **Compression**: Giảm băng thông mạng
+- **Local Processing**: Giảm thiểu giao tiếp mạng
 
-## Best Practices
+## Hướng dẫn thực hành
 
-### 1. Choose the Right Pattern
-- **Don't over-engineer**: Chỉ dùng pattern khi cần thiết
-- **Consider alternatives**: Đôi khi simple solution tốt hơn
-- **Performance impact**: Evaluate overhead của pattern
+### 1. Chọn Pattern phù hợp
+- Chỉ dùng pattern khi cần thiết
+- Cân nhắc các giải pháp thay thế
+- Đánh giá tác động hiệu năng
 
-### 2. ROS2 Integration
-- **Use ROS2 idioms**: Leverage built-in patterns
-- **Component model**: Design for component-based architecture
-- **Parameter system**: Use for configuration
+### 2. Tích hợp với ROS2
+- Tận dụng patterns có sẵn trong ROS2
+- Thiết kế theo kiến trúc component
+- Sử dụng hệ thống parameter
 
-### 3. Testing Strategy
-- **Mock objects**: Use for unit testing
-- **Integration tests**: Test pattern interactions
-- **Performance tests**: Verify real-time requirements
+### 3. Chiến lược kiểm thử
+- Unit testing với mock objects
+- Integration tests cho tương tác patterns
+- Performance tests cho yêu cầu thời gian thực
 
-### 4. Documentation
-- **Pattern intent**: Document why pattern was chosen
-- **Usage examples**: Provide clear examples
-- **Alternatives**: Document other options considered
+### 4. Tài liệu hóa
+- Ghi rõ lý do chọn pattern
+- Cung cấp ví dụ cụ thể
+- Liệt kê các phương án thay thế
 
-## Tools và Utilities
+## Công cụ và tiện ích
 
-### Build Tools
+### 1. Build Tools
 ```bash
-# Compile các examples
+# Tạo PDF từ markdown
 ./convert_to_pdf.sh
-
-# Convert headers
-./convert_headers.sh
 ```
 
-### Configuration Files
-- **YAML configs**: Pattern configurations
-- **Launch files**: ROS2 launch configurations
-- **Parameter files**: Runtime configurations
+### 2. Cấu hình
+- **YAML configs**: Cấu hình patterns
+- **Launch files**: Cấu hình khởi chạy ROS2
+- **Parameter files**: Cấu hình runtime
 
 ## Getting Started
 
@@ -230,44 +223,232 @@ public:
 - [MoveIt2](https://moveit.ros.org/)
 - [Gazebo](https://gazebosim.org/)
 
-## License
-
-This documentation is licensed under [MIT License](LICENSE).
 
 ---
 
 **Note**: Các examples trong documentation này được test với ROS2 Humble và C++17. Update có thể cần thiết cho newer versions.
-  - Driver implementation
-  - Communication protocols
 
-## 4. Architectural Patterns trong ROS2
+## Architectural Patterns trong ROS2
 
-### 4.1 Component-Based Architecture
-- **Node-based system**
-- **Lifecycle management**
-- **Plugin architecture**
+### 1. Node-based Architecture
+ROS2 được xây dựng trên kiến trúc node-based, mỗi node là một đơn vị độc lập có thể:
 
-### 4.2 Message-Passing Architecture
-- **Publisher/Subscriber**
-- **Services**
-- **Actions**
+- Xử lý một chức năng cụ thể
+- Giao tiếp với các node khác
+- Quản lý vòng đời riêng
 
-## Cách Áp Dụng Design Patterns trong ROS2
+#### Ví dụ Node Architecture
+```cpp
+class SensorNode : public rclcpp::Node {
+public:
+    SensorNode() : Node("sensor_node") {
+        // Publishers
+        data_pub_ = create_publisher<sensor_msgs::msg::LaserScan>(
+            "scan_data", 10);
+        
+        // Services
+        calibrate_srv_ = create_service<std_srvs::srv::Trigger>(
+            "calibrate_sensor",
+            std::bind(&SensorNode::handleCalibration, this, 
+                     std::placeholders::_1, std::placeholders::_2));
+        
+        // Timer-based processing
+        timer_ = create_wall_timer(
+            std::chrono::milliseconds(100),
+            std::bind(&SensorNode::publishData, this));
+    }
 
-1. **Xác định vấn đề**:
-   - Phân tích yêu cầu
-   - Xác định các thành phần cần thiết
-   - Xác định mối quan hệ giữa các thành phần
+private:
+    rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr data_pub_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr calibrate_srv_;
+    rclcpp::TimerBase::SharedPtr timer_;
+};
+```
 
-2. **Chọn Pattern phù hợp**:
-   - Dựa trên bản chất của vấn đề
-   - Cân nhắc tính linh hoạt và bảo trì
-   - Xem xét hiệu suất và độ phức tạp
+### 2. Communication Patterns
 
-3. **Triển khai Pattern**:
-   - Sử dụng ROS2 concepts (nodes, topics, services)
-   - Áp dụng C++ best practices
-   - Đảm bảo tính module hóa
+#### a. Publisher-Subscriber (Observer Pattern)
+- **Mục đích**: Truyền dữ liệu một chiều, một-nhiều
+- **Use Cases**: 
+  - Sensor data streaming
+  - Robot state broadcasting
+  - Event notifications
+
+```cpp
+// Publisher
+auto publisher = node->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+
+// Subscriber
+auto subscriber = node->create_subscription<sensor_msgs::msg::LaserScan>(
+    "scan", 10,
+    [](const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+        // Process laser scan data
+    }
+);
+```
+
+#### b. Client-Server (Request-Response Pattern)
+- **Mục đích**: Giao tiếp hai chiều, yêu cầu-phản hồi
+- **Use Cases**:
+  - Robot calibration
+  - Path planning requests
+  - System configuration
+
+```cpp
+// Service Server
+auto server = node->create_service<nav_msgs::srv::GetPlan>(
+    "plan_path",
+    [](const nav_msgs::srv::GetPlan::Request::SharedPtr req,
+       nav_msgs::srv::GetPlan::Response::SharedPtr res) {
+        // Generate and return path
+    }
+);
+
+// Service Client
+auto client = node->create_client<nav_msgs::srv::GetPlan>("plan_path");
+auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+auto future = client->async_send_request(request);
+```
+
+#### c. Action Pattern (Long-running Tasks)
+- **Mục đích**: Xử lý tác vụ dài hạn với feedback
+- **Use Cases**:
+  - Navigation tasks
+  - Manipulation sequences
+  - Complex behaviors
+
+```cpp
+// Action Server
+class NavigateActionServer : public rclcpp::Node {
+public:
+    using NavigateAction = nav2_msgs::action::NavigateToPose;
+    using GoalHandle = rclcpp_action::ServerGoalHandle<NavigateAction>;
+
+    explicit NavigateActionServer()
+        : Node("navigate_action_server")
+    {
+        action_server_ = rclcpp_action::create_server<NavigateAction>(
+            this, "navigate_to_pose",
+            std::bind(&NavigateActionServer::handleGoal, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&NavigateActionServer::handleCancel, this, std::placeholders::_1),
+            std::bind(&NavigateActionServer::handleAccepted, this, std::placeholders::_1)
+        );
+    }
+
+private:
+    rclcpp_action::Server<NavigateAction>::SharedPtr action_server_;
+};
+```
+
+### 3. Component Architecture
+ROS2 hỗ trợ component-based development để tăng tính tái sử dụng và module hóa:
+
+#### a. Lifecycle Components
+- **Mục đích**: Quản lý vòng đời node theo state machine
+- **States**: Unconfigured → Inactive → Active → Finalized
+```cpp
+class MotorController : public rclcpp_lifecycle::LifecycleNode {
+public:
+    MotorController() : LifecycleNode("motor_controller") {
+        // Initialize hardware interface
+    }
+
+    CallbackReturn on_configure(const rclcpp_lifecycle::State &) {
+        // Configure hardware
+        return CallbackReturn::SUCCESS;
+    }
+
+    CallbackReturn on_activate(const rclcpp_lifecycle::State &) {
+        // Start motors
+        return CallbackReturn::SUCCESS;
+    }
+
+    CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) {
+        // Stop motors
+        return CallbackReturn::SUCCESS;
+    }
+};
+```
+
+#### b. Composable Nodes
+- **Mục đích**: Kết hợp nhiều nodes trong cùng một process
+- **Lợi ích**: Giảm overhead giao tiếp, tối ưu hiệu năng
+```cpp
+class SensorProcessor : public rclcpp::Node {
+public:
+    RCLCPP_SHARED_PTR_DEFINITIONS(SensorProcessor)
+    
+    SensorProcessor(const rclcpp::NodeOptions & options)
+        : Node("sensor_processor", options)
+    {
+        // Node implementation
+    }
+};
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(SensorProcessor)
+```
+
+### 4. Plugin Architecture
+ROS2 sử dụng plugin system để mở rộng chức năng một cách linh hoạt:
+
+#### a. Plugin Interfaces
+```cpp
+class PlannerInterface : public rclcpp::plugin::PluginInterface {
+public:
+    virtual Path planPath(const Point& start, const Point& goal) = 0;
+    virtual ~PlannerInterface() = default;
+};
+
+class AStarPlanner : public PlannerInterface {
+public:
+    Path planPath(const Point& start, const Point& goal) override {
+        // A* implementation
+    }
+};
+```
+
+#### b. Plugin Loading
+```cpp
+#include "pluginlib/class_loader.hpp"
+
+pluginlib::ClassLoader<PlannerInterface> planner_loader(
+    "nav2_core", "nav2_core::PlannerInterface");
+std::shared_ptr<PlannerInterface> planner = 
+    planner_loader.createSharedInstance("nav2_navfn_planner/NavfnPlanner");
+```
+
+### 5. Parameter Management
+ROS2 cung cấp hệ thống parameter để cấu hình node một cách linh hoạt:
+
+```cpp
+class ConfigurableNode : public rclcpp::Node {
+public:
+    ConfigurableNode() : Node("configurable_node") {
+        // Declare parameters
+        declare_parameter("max_speed", 1.0);
+        declare_parameter("control_rate", 10);
+        
+        // Parameter callback
+        auto param_callback = 
+            [this](const std::vector<rclcpp::Parameter> & params) {
+                for (const auto & param : params) {
+                    if (param.get_name() == "max_speed") {
+                        max_speed_ = param.as_double();
+                    }
+                }
+                return rcl_interfaces::msg::SetParametersResult{};
+            };
+        
+        param_callback_handle_ = 
+            add_on_set_parameters_callback(param_callback);
+    }
+
+private:
+    double max_speed_;
+    OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
+};
+```
 
 ## Best Practices
 1. **SOLID Principles trong ROS2**

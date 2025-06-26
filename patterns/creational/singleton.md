@@ -1,4 +1,4 @@
-# Singleton Pattern trong ROS2 và Robotics
+# SINGLETON PATTERN 
 
 ## 1. Giới thiệu
 

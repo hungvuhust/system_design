@@ -1,10 +1,11 @@
-# Builder Pattern trong ROS2 và Robotics
+# BUILDER PATTERN 
 
 ## 1. Giới thiệu
 
 Builder Pattern là một design pattern thuộc nhóm Creational Pattern, giúp xây dựng các đối tượng phức tạp theo từng bước. Pattern này đặc biệt hữu ích khi cần tạo ra một đối tượng với nhiều tham số cấu hình và các thành phần con.
 
 Trong robotics và ROS2, Builder Pattern thường được sử dụng để:
+
 - Khởi tạo robot với nhiều cấu hình khác nhau
 - Xây dựng các message phức tạp
 - Tạo các mission plan cho robot
@@ -12,6 +13,7 @@ Trong robotics và ROS2, Builder Pattern thường được sử dụng để:
 ## 2. Vấn đề
 
 Giả sử chúng ta cần xây dựng một robot delivery với nhiều cấu hình khác nhau:
+
 - Loại động cơ (bánh, xích, chân)
 - Hệ thống cảm biến (camera, lidar, IMU)
 - Hệ thống điều khiển (autonomous, semi-autonomous, manual)
@@ -19,6 +21,7 @@ Giả sử chúng ta cần xây dựng một robot delivery với nhiều cấu 
 - Kích thước khung gầm
 
 Việc sử dụng constructor với nhiều tham số sẽ dẫn đến:
+
 - Code khó đọc và dễ nhầm lẫn thứ tự tham số
 - Khó mở rộng khi thêm tính năng mới
 - Khó tái sử dụng code cho các cấu hình khác nhau
@@ -26,6 +29,7 @@ Việc sử dụng constructor với nhiều tham số sẽ dẫn đến:
 ## 3. Giải pháp
 
 Builder Pattern giải quyết vấn đề bằng cách:
+
 1. Tách quá trình xây dựng đối tượng thành nhiều bước nhỏ
 2. Cho phép tạo các cấu hình khác nhau của cùng một đối tượng
 3. Che giấu chi tiết cài đặt phức tạp

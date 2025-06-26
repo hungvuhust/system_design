@@ -5,6 +5,7 @@
 Facade Pattern là một mẫu thiết kế thuộc nhóm Structural Pattern, cung cấp một interface đơn giản cho một hệ thống phức tạp. Pattern này tạo ra một lớp facade đóng vai trò như một "mặt tiền" đơn giản, che giấu sự phức tạp của hệ thống bên dưới.
 
 Trong ROS2 và robotics, Facade Pattern thường được sử dụng để:
+
 - Đơn giản hóa việc tương tác với robot
 - Gom nhóm nhiều ROS2 service/action thành một interface thống nhất
 - Tạo API cao cấp cho hệ thống phức tạp
@@ -13,12 +14,14 @@ Trong ROS2 và robotics, Facade Pattern thường được sử dụng để:
 ## 2. Vấn đề
 
 Trong robotics, chúng ta thường gặp các hệ thống phức tạp với nhiều thành phần, ví dụ:
+
 - Robot arm với nhiều joint controllers
 - Navigation system với planner, controller, localizer
 - Perception system với nhiều sensors và algorithms
 - Multi-robot system với nhiều robot và coordinators
 
 Việc làm việc trực tiếp với các thành phần này sẽ dẫn đến:
+
 - Code phức tạp và khó bảo trì
 - Coupling chặt giữa các thành phần
 - Khó thay đổi implementation
@@ -27,12 +30,23 @@ Việc làm việc trực tiếp với các thành phần này sẽ dẫn đến
 ## 3. Giải pháp
 
 Facade Pattern giải quyết vấn đề bằng cách:
+
 1. Tạo một interface đơn giản cho hệ thống phức tạp
 2. Che giấu chi tiết implementation
 3. Giảm coupling giữa client và subsystems
 4. Cung cấp entry point duy nhất cho hệ thống
 
 ## 4. Ví dụ thực tế: Robot Arm Control
+
+<style>
+.code-block {
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+</style>
 
 ```cpp
 // Subsystem classes
@@ -84,7 +98,8 @@ class TrajectoryPlanner {
 public:
     std::vector<std::vector<double>> planPath(
         const std::vector<double>& start,
-        const std::vector<double>& goal) {
+        const std::vector<double>& goal
+    ) {
         RCLCPP_INFO(logger_, "Planning path from start to goal");
         // Implementation
         return {start, goal}; // Simplified
@@ -98,7 +113,8 @@ private:
 class RobotArmFacade {
 public:
     RobotArmFacade()
-        : node_(std::make_shared<rclcpp::Node>("robot_arm_facade")) {
+        : node_(std::make_shared<rclcpp::Node>("robot_arm_facade")) 
+    {
         // Initialize subsystems
         joint_controller_ = std::make_unique<JointController>();
         gripper_controller_ = std::make_unique<GripperController>();
@@ -108,27 +124,39 @@ public:
 
     // High-level methods
     bool pickObject(const geometry_msgs::msg::Pose& object_pose) {
-        RCLCPP_INFO(node_->get_logger(), "Picking object at pose: x=%f, y=%f, z=%f",
-                   object_pose.position.x,
-                   object_pose.position.y,
-                   object_pose.position.z);
+        RCLCPP_INFO(
+            node_->get_logger(),
+            "Picking object at pose: x=%f, y=%f, z=%f",
+            object_pose.position.x,
+            object_pose.position.y,
+            object_pose.position.z
+        );
 
         try {
             // 1. Plan path to pre-grasp pose
             auto pre_grasp_joints = computeInverseKinematics(object_pose);
             if (pre_grasp_joints.empty()) {
-                RCLCPP_ERROR(node_->get_logger(), "Failed to compute IK for pre-grasp pose");
+                RCLCPP_ERROR(
+                    node_->get_logger(),
+                    "Failed to compute IK for pre-grasp pose"
+                );
                 return false;
             }
 
             // 2. Check collision
             if (collision_checker_->checkCollision(pre_grasp_joints)) {
-                RCLCPP_ERROR(node_->get_logger(), "Path to object is blocked");
+                RCLCPP_ERROR(
+                    node_->get_logger(),
+                    "Path to object is blocked"
+                );
                 return false;
             }
 
             // 3. Plan and execute trajectory
-            auto path = trajectory_planner_->planPath(getCurrentJointPositions(), pre_grasp_joints);
+            auto path = trajectory_planner_->planPath(
+                getCurrentJointPositions(),
+                pre_grasp_joints
+            );
             executeTrajectory(path);
 
             // 4. Open gripper
@@ -144,33 +172,49 @@ public:
             return true;
 
         } catch (const std::exception& e) {
-            RCLCPP_ERROR(node_->get_logger(), "Pick operation failed: %s", e.what());
+            RCLCPP_ERROR(
+                node_->get_logger(),
+                "Pick operation failed: %s",
+                e.what()
+            );
             return false;
         }
     }
 
     bool placeObject(const geometry_msgs::msg::Pose& place_pose) {
-        RCLCPP_INFO(node_->get_logger(), "Placing object at pose: x=%f, y=%f, z=%f",
-                   place_pose.position.x,
-                   place_pose.position.y,
-                   place_pose.position.z);
+        RCLCPP_INFO(
+            node_->get_logger(),
+            "Placing object at pose: x=%f, y=%f, z=%f",
+            place_pose.position.x,
+            place_pose.position.y,
+            place_pose.position.z
+        );
 
         try {
             // 1. Plan path to place pose
             auto place_joints = computeInverseKinematics(place_pose);
             if (place_joints.empty()) {
-                RCLCPP_ERROR(node_->get_logger(), "Failed to compute IK for place pose");
+                RCLCPP_ERROR(
+                    node_->get_logger(),
+                    "Failed to compute IK for place pose"
+                );
                 return false;
             }
 
             // 2. Check collision
             if (collision_checker_->checkCollision(place_joints)) {
-                RCLCPP_ERROR(node_->get_logger(), "Path to place pose is blocked");
+                RCLCPP_ERROR(
+                    node_->get_logger(),
+                    "Path to place pose is blocked"
+                );
                 return false;
             }
 
             // 3. Plan and execute trajectory
-            auto path = trajectory_planner_->planPath(getCurrentJointPositions(), place_joints);
+            auto path = trajectory_planner_->planPath(
+                getCurrentJointPositions(),
+                place_joints
+            );
             executeTrajectory(path);
 
             // 4. Open gripper to release object
@@ -182,7 +226,11 @@ public:
             return true;
 
         } catch (const std::exception& e) {
-            RCLCPP_ERROR(node_->get_logger(), "Place operation failed: %s", e.what());
+            RCLCPP_ERROR(
+                node_->get_logger(),
+                "Place operation failed: %s",
+                e.what()
+            );
             return false;
         }
     }
@@ -190,7 +238,10 @@ public:
     void moveToHome() {
         RCLCPP_INFO(node_->get_logger(), "Moving to home position");
         std::vector<double> home_position = {0.0, -1.57, 0.0, -1.57, 0.0, 0.0};
-        auto path = trajectory_planner_->planPath(getCurrentJointPositions(), home_position);
+        auto path = trajectory_planner_->planPath(
+            getCurrentJointPositions(),
+            home_position
+        );
         executeTrajectory(path);
     }
 

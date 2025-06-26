@@ -1,6 +1,6 @@
-## PROTOTYPE PATTERN TRONG ROS2
+# PROTOTYPE PATTERN 
 
-#### 1. Giới thiệu đơn giản
+## 1. Giới thiệu đơn giản
 Prototype Pattern cho phép tạo ra các đối tượng mới bằng cách cloning các đối tượng hiện có thay vì tạo từ đầu. Trong ROS2, pattern này đặc biệt hữu ích cho:
 
 - Clone robot configurations
@@ -10,10 +10,10 @@ Prototype Pattern cho phép tạo ra các đối tượng mới bằng cách clo
 - Clone node configurations
 - Tạo fleet của robots tương tự
 
-#### 2. Định nghĩa chi tiết
+## 2. Định nghĩa chi tiết
 Prototype Pattern xác định các loại đối tượng cần tạo bằng cách sử dụng một instance nguyên mẫu, và tạo các đối tượng mới bằng cách copying nguyên mẫu này.
 
-#### Các thành phần chính:
+### Các thành phần chính:
 1. **Prototype Interface**:
    - Định nghĩa clone method
    - Common interface cho cloning
@@ -30,7 +30,7 @@ Prototype Pattern xác định các loại đối tượng cần tạo bằng c�
    - Lưu trữ các prototypes
    - Factory pattern integration
 
-#### 3. Ví dụ thực tế trong ROS2
+## 3. Ví dụ thực tế trong ROS2
 
 ```cpp
 #include <rclcpp/rclcpp.hpp>
@@ -992,7 +992,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-#### 4. Giải thích chi tiết cách hoạt động
+## 4. Giải thích chi tiết cách hoạt động
 
 1. **Prototype Interface**:
    - `RobotComponentPrototype` định nghĩa clone method
@@ -1014,7 +1014,7 @@ int main(int argc, char** argv) {
    - Fleet creation capabilities
    - Customization support
 
-#### 5. Ưu điểm trong ROS2
+## 5. Ưu điểm trong ROS2
 
 1. **Performance Benefits**:
    - Faster object creation than constructors
@@ -1031,7 +1031,7 @@ int main(int argc, char** argv) {
    - Efficient cloning
    - Resource sharing
 
-#### 6. Các trường hợp sử dụng trong ROS2
+## 6. Các trường hợp sử dụng trong ROS2
 
 1. **Robot Fleet Management**:
 ```cpp
@@ -1131,7 +1131,7 @@ public:
 };
 ```
 
-#### 7. Best Practices trong ROS2
+## 7. Best Practices trong ROS2
 
 1. **Deep vs Shallow Copy**:
 ```cpp
@@ -1197,7 +1197,7 @@ public:
 };
 ```
 
-#### 8. Mở rộng và tùy chỉnh
+## 8. Mở rộng và tùy chỉnh
 
 1. **Dynamic Prototype Loading**:
 ```cpp
@@ -1296,7 +1296,7 @@ public:
 };
 ```
 
-#### 9. Testing
+## 9. Testing
 
 1. **Prototype Tests**:
 ```cpp
@@ -1372,7 +1372,7 @@ TEST(IntegrationTest, RobotFleetCreationTest) {
 }
 ```
 
-#### 10. Kết luận
+## 10. Kết luận
 
 Prototype Pattern là một mẫu thiết kế rất hiệu quả trong ROS2 robotics, đặc biệt hữu ích cho:
 
