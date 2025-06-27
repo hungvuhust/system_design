@@ -38,16 +38,6 @@ Facade Pattern giải quyết vấn đề bằng cách:
 
 ## 4. Ví dụ thực tế: Robot Arm Control
 
-<style>
-.code-block {
-    white-space: pre-wrap;       /* CSS 3 */
-    white-space: -moz-pre-wrap;  /* Mozilla */
-    white-space: -pre-wrap;      /* Opera 4-6 */
-    white-space: -o-pre-wrap;    /* Opera 7 */
-    word-wrap: break-word;       /* Internet Explorer 5.5+ */
-}
-</style>
-
 ```cpp
 // Subsystem classes
 class JointController {
